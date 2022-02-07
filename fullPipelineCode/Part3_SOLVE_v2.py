@@ -50,11 +50,11 @@ class Solver: # Defines iterative solver methods
 
         if interaction == 1:
             # Activation equation
-            return lambda concentration: 1/(1 + (np.abs(rate/concentration))**n)
+            return lambda concentration: 1/(1 + np.sign(rate/concentration)*(np.abs(rate/concentration))**n) # This function is only formatted strangely to avoid an error.
 
         if interaction == -1:
             # Repression equation
-            return lambda concentration: 1/(1 + (np.abs(concentration/rate))**n)
+            return lambda concentration: 1/(1 + np.sign(rate/concentration)*(np.abs(concentration/rate))**n)
 
     def create(size,perturbation=0.001,steadystate=0.1):
         # Create array concentration grid attribute
