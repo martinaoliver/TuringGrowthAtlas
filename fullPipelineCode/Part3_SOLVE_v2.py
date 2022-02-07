@@ -102,7 +102,7 @@ class Solver: # Defines iterative solver methods
         # Create the reaction equations for this parameter set and topology. 
         def react(conc):
             f_x = p['production_x'] - p['degradation_x']*conc[0] + p['max_conc_x'] * (Solver.hill_equations(topology[0,0], p['k_xx'], p['n'])(conc[0])) * (Solver.hill_equations(topology[0,1], p['k_yx'], p['n']))(conc[1])
-            f_y = p['production_y'] - p['degradation_y']*conc[0] + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'], p['n'])(conc[0])) * (Solver.hill_equations(topology[1,1], p['k_yy'], p['n']))(conc[1])
+            f_y = p['production_y'] - p['degradation_y']*conc[1] + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'], p['n'])(conc[0])) * (Solver.hill_equations(topology[1,1], p['k_yy'], p['n']))(conc[1])
             return np.array([f_x, f_y])
 
         # Set up starting conditions.
