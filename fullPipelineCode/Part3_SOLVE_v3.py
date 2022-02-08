@@ -8,7 +8,6 @@ from scipy.linalg import solve_banded
 from scipy import optimize
 from sympy import *
 import matplotlib.pyplot as plt
-from Part2_PARAMETERS import LHS
 
 np.random.seed(1)
 
@@ -111,9 +110,22 @@ class Solver: # Defines iterative solver methods
             jacobian_topology = functions.jacobian(arguments)
             return jacobian_topology
 
+        def loguniform(low=-3, high=3, size=None):
+            return (10) ** (np.random.uniform(low, high, size))
+
+        def lhs_list(data, nsample):
+            nvar = data.shape[1]
+            ran = np.random.uniform(size=(nsample, nvar))
+            s = np.zeros((nsample, nvar))
+            for j in range(0, nvar):
+                idx = np.random.permutation(nsample) + 1
+                P = ((idx - ran[:, j]) / nsample) * 100
+                s[:, j] = np.percentile(data[:, j], P)
+            return s
+
         def lhs_initial_conditions(n_initialconditions=10, n_species=2):
-            data = np.column_stack(([LHS.loguniform(size=100000)] * n_species))
-            initial_conditions = LHS.lhs(data, n_initialconditions)
+            data = np.column_stack(([loguniform(size=100000)] * n_species))
+            initial_conditions = lhs_list(data, n_initialconditions)
             return np.array(initial_conditions, dtype=np.float)
 
         def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
@@ -187,7 +199,7 @@ class Solver: # Defines iterative solver methods
         if SteadyState_list:
             conc_list = []
             for steady_conc in SteadyState_list:
-                concentrations = [Solver.create(steady_conc[i], size=currentJ) for i in range(2)]
+                concentrations = [create(steady_conc[i], size=currentJ) for i in range(2)]
 
                 for ti in range(num_timepoints):
 
