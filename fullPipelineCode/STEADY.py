@@ -44,9 +44,9 @@ class Steady_State:
         # perform the Newton-Raphson iteration
         while err > tolerance and iter < max_num_iter and np.all(x != 0):
             jac = jacobian1()
-            A, B = symbols('A'), symbols('B')
-            jac = jac.subs(A, x[0])
-            jac = jac.subs(B, x[1])
+            X, Y = symbols('X'), symbols('Y')
+            jac = jac.subs(X, x[0])
+            jac = jac.subs(Y, x[1])
             jac = np.array(jac, dtype=float)
 
             # update
