@@ -2,7 +2,7 @@ from tqdm import tqdm
 import sys
 import multiprocessing as mp
 import traceback
-from itertools import product
+from itertools import product, chain
 
 
 #########################################
@@ -25,7 +25,7 @@ def multiprocess_wrapper(function, items, cpu):
     processes = min(cpu, mp.cpu_count())
 
     with mp.Pool(processes) as p:
-        results = dict(p.imap(function, items))
+        results = p.imap(function, items)
         x = p.imap(function, items)
         p.close()
         p.join()
@@ -33,13 +33,19 @@ def multiprocess_wrapper(function, items, cpu):
 
 from Part3_SOLVE_v2 import Solver
 def run_solver(items):
-    items, args = items
+    index, params, args = items
+    index_list = [i for i in index]
+
     try:
-        concs_list = []
-        for count, item in enumerate(items):
-            conc, ss = Solver.solve(p = item[0], topology = item[1], args = args)
+        concs, ss = Solver.solve(p = params[0], topology = params[1], args = args)
+        indexes = []
+        for i in range(len(concs)):
+            new_index = index_list + [i]
+            indexes.append(tuple(new_index))
+        concs = list(zip(indexes, concs))
 
-
+        #ss = list(zip(indexes, ss))
+        return concs #ss
 
     except:
         traceback.print_exc()
@@ -54,8 +60,8 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=300,
-        total_time=299,
+        system_length=100,
+        total_time=99,
         num_samples=100,
         growth=None
     )
@@ -100,8 +106,11 @@ if __name__ == '__main__':
 
     params_and_arrays = {index: combination for index,combination in zip(indexes, combinations)}
 
-    items = [(pa, args) for pa in params_and_arrays]
+    items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
+
 
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
-    results = multiprocess_wrapper(run_solver, items, 2)
+    results = multiprocess_wrapper(run_solver, items, 1)
+    results = {key:value for key, value in chain(*results)}
+    print(results)
