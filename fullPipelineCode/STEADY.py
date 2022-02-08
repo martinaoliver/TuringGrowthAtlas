@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import optimize
 from sympy import *
+from Part2_PARAMETERS import LHS
 
 class Steady_State:
 
@@ -10,32 +11,19 @@ class Steady_State:
     def update_react(self, react_ss):
         self.react_func = react_ss
 
-    def jacobian1():
+    def jacobian1(self):
         X, Y = symbols('X'), symbols('Y')
         arguments = Matrix([X, Y])
-        functions = Matrix(self.react_func([X, Y]))
+        functions = Matrix(react_func([X, Y]))
         jacobian_topology = functions.jacobian(arguments)
         return jacobian_topology
 
-    def loguniform(low=-3, high=3, size=None):
-        return (10) ** (np.random.uniform(low, high, size))
-
-    def lhs_list(data, nsample):
-        nvar = data.shape[1]
-        ran = np.random.uniform(size=(nsample, nvar))
-        s = np.zeros((nsample, nvar))
-        for j in range(0, nvar):
-            idx = np.random.permutation(nsample) + 1
-            P = ((idx - ran[:, j]) / nsample) * 100
-            s[:, j] = np.percentile(data[:, j], P)
-        return s
-
-    def lhs_initial_conditions(n_initialconditions=10, n_species=2):
-        data = np.column_stack(([loguniform(size=100000)] * n_species))
-        initial_conditions = lhs_list(data, n_initialconditions)
+    def lhs_initial_conditions(self, n_initialconditions=10, n_species=2):
+        data = np.column_stack(([LHS.loguniform(size=100000)] * n_species))
+        initial_conditions = LHS.lhs(data, n_initialconditions)
         return np.array(initial_conditions, dtype=np.float)
 
-    def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+    def newton_raphson(self, x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
         x = x_initial
         fx = react_func(x)
         err = np.linalg.norm(fx)
@@ -60,7 +48,7 @@ class Steady_State:
             if sum(item < 0 for item in x) == 0:
                 return (x, err, 0)
 
-    def newtonraphson_run(initial_conditions):
+    def newtonraphson_run(self, initial_conditions):
         count = 0
         SteadyState_list = []
         for n in range(len(initial_conditions)):
