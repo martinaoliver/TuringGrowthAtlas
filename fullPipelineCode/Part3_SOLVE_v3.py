@@ -58,6 +58,30 @@ class Solver: # Defines iterative solver methods
             # Repression equation
             return lambda concentration: 1/(1 + np.sign(rate/concentration)*(np.abs(concentration/rate))**n)
 
+    def loguniform(low=-3, high=3, size=None):
+        return (10) ** (np.random.uniform(low, high, size))
+
+    def lhs_list(data, nsample):
+        nvar = data.shape[1]
+        ran = np.random.uniform(size=(nsample, nvar))
+        s = np.zeros((nsample, nvar))
+        for j in range(0, nvar):
+            idx = np.random.permutation(nsample) + 1
+            P = ((idx - ran[:, j]) / nsample) * 100
+            s[:, j] = np.percentile(data[:, j], P)
+        return s
+
+    def lhs_initial_conditions(n_initialconditions=10, n_species=2):
+        data = np.column_stack(([loguniform(size=100000)] * n_species))
+        initial_conditions = lhs_list(data, n_initialconditions)
+        return np.array(initial_conditions, dtype=np.float)
+
+    # define the initial value from steady state
+    def create(steadystate, size, perturbation=0.001):
+        low = steadystate - perturbation
+        high = steadystate + perturbation
+        return np.random.uniform(low=low, high=high, size=size)
+
     def grow(array):
         # Grow grid
         # Add row
@@ -110,24 +134,6 @@ class Solver: # Defines iterative solver methods
             jacobian_topology = functions.jacobian(arguments)
             return jacobian_topology
 
-        def loguniform(low=-3, high=3, size=None):
-            return (10) ** (np.random.uniform(low, high, size))
-
-        def lhs_list(data, nsample):
-            nvar = data.shape[1]
-            ran = np.random.uniform(size=(nsample, nvar))
-            s = np.zeros((nsample, nvar))
-            for j in range(0, nvar):
-                idx = np.random.permutation(nsample) + 1
-                P = ((idx - ran[:, j]) / nsample) * 100
-                s[:, j] = np.percentile(data[:, j], P)
-            return s
-
-        def lhs_initial_conditions(n_initialconditions=10, n_species=2):
-            data = np.column_stack(([loguniform(size=100000)] * n_species))
-            initial_conditions = lhs_list(data, n_initialconditions)
-            return np.array(initial_conditions, dtype=np.float)
-
         def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
             x = x_initial
             fx = react(x)
@@ -176,14 +182,9 @@ class Solver: # Defines iterative solver methods
 
             return SteadyState_list
 
-        initial_conditions1 = lhs_initial_conditions(n_initialconditions=100, n_species=2)
+        initial_conditions1 = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = newtonraphson_run(initial_conditions1)
 
-        #define the initial value from steady state
-        def create(steadystate, size, perturbation=0.001):
-            low = steadystate - perturbation
-            high = steadystate + perturbation
-            return np.random.uniform(low=low, high=high, size=size)
 
         # Set up starting conditions.
         A_matrix = A_matrices[0]
@@ -219,7 +220,7 @@ class Solver: # Defines iterative solver methods
 
                 conc_list.append(concentrations)
 
-            return concentrations, SteadyState_list
+            return conc_list, SteadyState_list
 
         else:
             return [None],[None]
