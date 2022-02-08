@@ -1,16 +1,14 @@
-import numpy as np
-import itertools, copy, sys
 from tqdm import tqdm
 from datetime import datetime
-import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import itertools, copy, sys
 from scipy.sparse import spdiags, diags
 from scipy.linalg import solve_banded
-from scipy import optimize
-import pandas as pd
-from sympy import *
+import matplotlib.pyplot as plt
+from STEADY import Steady_State
 
 np.random.seed(1)
-
 
 class Solver: # Defines iterative solver methods
 
@@ -103,6 +101,8 @@ class Solver: # Defines iterative solver methods
             f_y = p['production_y'] - p['degradation_y']*Y + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'], p['n'])(X)) * (Solver.hill_equations(topology[1,1], p['k_yy'], p['n']))(Y)
             return np.array([f_x, f_y])
 
+        
+        # reaction function for solving steady state (dont know if return in array works)
         def react_ss(conc):
             X, Y = conc
             f_x = p['production_x'] - p['degradation_x'] * X + p['max_conc_x'] * (
@@ -113,82 +113,13 @@ class Solver: # Defines iterative solver methods
                       Solver.hill_equations(topology[1, 1], p['k_yy'], p['n']))(Y)
             return (f_x, f_y)
 
+        
         # solve the steady state
-        def jacobian1():
-            X,Y = symbols('X'), symbols('Y')
-            arguments = Matrix([X, Y])
-            functions = Matrix(react_ss([X, Y]))
-            jacobian_topology = functions.jacobian(arguments)
+        Steady_State.update_react(react_ss) #update the react function
+        initial_conditions1 = Steady_State.lhs_initial_conditions(n_initialconditions=100, n_species=2)
+        SteadyState_list = Steady_State.newtonraphson_run(initial_conditions1)
 
-            return jacobian_topology
 
-        def loguniform(low=-3, high=3, size=None):
-            return (10) ** (np.random.uniform(low, high, size))
-
-        def lhs_list(data, nsample):
-            nvar = data.shape[1]
-            ran = np.random.uniform(size=(nsample, nvar))
-            s = np.zeros((nsample, nvar))
-            for j in range(0, nvar):
-                idx = np.random.permutation(nsample) + 1
-                P = ((idx - ran[:, j]) / nsample) * 100
-                s[:, j] = np.percentile(data[:, j], P)
-            return s
-
-        def lhs_initial_conditions(n_initialconditions=10, n_species=2):
-            data = np.column_stack(([loguniform(size=100000)] * n_species))
-            initial_conditions = lhs_list(data, n_initialconditions)
-            return np.array(initial_conditions, dtype=np.float)
-
-        def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
-            x = x_initial
-            fx = react_ss(x)
-            err = np.linalg.norm(fx)
-            iter = 0
-
-            # perform the Newton-Raphson iteration
-            while err > tolerance and iter < max_num_iter and np.all(x != 0):
-                jac = jacobian1()
-                A, B = symbols('A'), symbols('B')
-                jac = jac.subs(A, x[0])
-                jac = jac.subs(B, x[1])
-                jac = np.array(jac, dtype=float)
-
-                #update
-                x = x - alpha * np.linalg.solve(jac, fx)
-                fx = react_ss(x)
-                err = np.linalg.norm(fx)
-                iter = iter + 1
-
-            # check that there are no negatives
-            if err < tolerance:
-                if sum(item < 0 for item in x) == 0:
-                    return (x, err, 0)
-
-        def newtonraphson_run(initial_conditions):
-            count = 0
-            SteadyState_list = []
-            for n in range(len(initial_conditions)):
-                xn = []
-                xn = newton_raphson(initial_conditions[n])
-
-                if xn != None:
-                    if count == 0:
-                        SteadyState_list.append(xn[0])
-                        count += 1
-                    if count > 0:  # repeats check: compare with previous steady states
-                        logiclist = []
-                        for i in range(count):
-                            logiclist.append(
-                                np.allclose(SteadyState_list[i], xn[0], rtol=10 ** -2, atol=0))  # PROCEED IF NO TRUES FOUND
-                        if not True in logiclist:  # no similar steady states previously found
-                            SteadyState_list.append(xn[0])
-                            count += 1
-
-            return SteadyState_list
-
-        initial_conditions1 = lhs_initial_conditions(n_initialconditions=100, n_species=2)
-        SteadyState_list = newtonraphson_run(initial_conditions1)
 
         def create(steadystate, size, perturbation=0.001):
             # Create array concentration grid attribute
