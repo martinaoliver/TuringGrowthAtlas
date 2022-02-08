@@ -5,8 +5,10 @@ import pandas as pd
 import itertools, copy, sys
 from scipy.sparse import spdiags, diags
 from scipy.linalg import solve_banded
+from scipy import optimize
+from sympy import *
 import matplotlib.pyplot as plt
-from STEADY import Steady_State
+from Part2_PARAMETERS import LHS
 
 np.random.seed(1)
 
@@ -28,7 +30,7 @@ class Solver: # Defines iterative solver methods
         centraldiag = [1.+alphan]+[1.+2.*alphan for j in range(size-2)]+[1.+alphan]
         topdiag = [-alphan for j in range(size-1)]
         diagonals = [bottomdiag,centraldiag,topdiag]
-        A = diags(diagonals, [ -1, 0,1]).toarray()
+        A = diags(diagonals, [ -1, 0, 1]).toarray()
         return np.linalg.inv(A)
 
     def b_matrix(alphan, size):
@@ -80,7 +82,6 @@ class Solver: # Defines iterative solver methods
         dt = float(total_time) / float(num_timepoints - 1)
 
         for param in ['diffusion_x', 'diffusion_y']:
-            
             # Calculate alpha values for each species.
             p[f"alphan_{param[-1]}"] = Solver.calculate_alpha(p[param], dx, dt)
                 
@@ -94,41 +95,85 @@ class Solver: # Defines iterative solver methods
             A_matrices = [[Solver.a_matrix(p["alphan_x"],j+1),Solver.a_matrix(p["alphan_y"],j+1)] for j in range(J)]
             B_matrices = [[Solver.b_matrix(p["alphan_x"],j+1),Solver.b_matrix(p["alphan_y"],j+1)] for j in range(J)]
 
-        # Create the reaction equations for this parameter set and topology. 
+        # Create the reaction equations for this parameter set and topology.
         def react(conc):
             X,Y = conc
             f_x = p['production_x'] - p['degradation_x']*X + p['max_conc_x'] * (Solver.hill_equations(topology[0,0], p['k_xx'], p['n'])(X)) * (Solver.hill_equations(topology[0,1], p['k_yx'], p['n']))(Y)
             f_y = p['production_y'] - p['degradation_y']*Y + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'], p['n'])(X)) * (Solver.hill_equations(topology[1,1], p['k_yy'], p['n']))(Y)
             return np.array([f_x, f_y])
 
-        
-        # reaction function for solving steady state (dont know if return in array works)
-        def react_ss(conc):
-            X, Y = conc
-            f_x = p['production_x'] - p['degradation_x'] * X + p['max_conc_x'] * (
-                Solver.hill_equations(topology[0, 0], p['k_xx'], p['n'])(X)) * (
-                      Solver.hill_equations(topology[0, 1], p['k_yx'], p['n']))(Y)
-            f_y = p['production_y'] - p['degradation_y'] * Y + p['max_conc_y'] * (
-                Solver.hill_equations(topology[1, 0], p['k_xy'], p['n'])(X)) * (
-                      Solver.hill_equations(topology[1, 1], p['k_yy'], p['n']))(Y)
-            return (f_x, f_y)
 
-        
         # solve the steady state
-        Steady_State.update_react(react_ss) #update the react function
-        initial_conditions1 = Steady_State.lhs_initial_conditions(n_initialconditions=100, n_species=2)
-        SteadyState_list = Steady_State.newtonraphson_run(initial_conditions1)
+        def jacobian1():
+            X, Y = symbols('X'), symbols('Y')
+            arguments = Matrix([X, Y])
+            functions = Matrix(react([X, Y]))
+            jacobian_topology = functions.jacobian(arguments)
+            return jacobian_topology
 
+        def lhs_initial_conditions(n_initialconditions=10, n_species=2):
+            data = np.column_stack(([LHS.loguniform(size=100000)] * n_species))
+            initial_conditions = LHS.lhs(data, n_initialconditions)
+            return np.array(initial_conditions, dtype=np.float)
 
+        def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+            x = x_initial
+            fx = react(x)
+            err = np.linalg.norm(fx)
+            iter = 0
 
+            # perform the Newton-Raphson iteration
+            while err > tolerance and iter < max_num_iter and np.all(x != 0):
+                jac = jacobian1()
+                X, Y = symbols('X'), symbols('Y')
+                jac = jac.subs(X, x[0])
+                jac = jac.subs(Y, x[1])
+                jac = np.array(jac, dtype=float)
+
+                # update
+                x = x - alpha * np.linalg.solve(jac, fx)
+                fx = react(x)
+                err = np.linalg.norm(fx)
+                iter = iter + 1
+
+            # check that there are no negatives
+            if err < tolerance:
+                if sum(item < 0 for item in x) == 0:
+                    return (x, err, 0)
+
+        def newtonraphson_run(initial_conditions):
+            count = 0
+            SteadyState_list = []
+            for n in range(len(initial_conditions)):
+                xn = []
+                xn = newton_raphson(initial_conditions[n])
+
+                if xn != None:
+                    if count == 0:
+                        SteadyState_list.append(xn[0])
+                        count += 1
+                    if count > 0:  # repeats check: compare with previous steady states
+                        logiclist = []
+                        for i in range(count):
+                            logiclist.append(
+                                np.allclose(SteadyState_list[i], xn[0], rtol=10 ** -2,
+                                            atol=0))  # PROCEED IF NO TRUES FOUND
+                        if not True in logiclist:  # no similar steady states previously found
+                            SteadyState_list.append(xn[0])
+                            count += 1
+
+            return SteadyState_list
+
+        initial_conditions1 = lhs_initial_conditions(n_initialconditions=100, n_species=2)
+        SteadyState_list = newtonraphson_run(initial_conditions1)
+
+        #define the initial value from steady state
         def create(steadystate, size, perturbation=0.001):
-            # Create array concentration grid attribute
             low = steadystate - perturbation
             high = steadystate + perturbation
             return np.random.uniform(low=low, high=high, size=size)
 
         # Set up starting conditions.
-
         A_matrix = A_matrices[0]
         B_matrix = B_matrices[0]
 
@@ -165,7 +210,7 @@ class Solver: # Defines iterative solver methods
             return concentrations, SteadyState_list
 
         else:
-            return [],[]
+            return [None],[None]
 
     def plot_conc(U):
         plt.plot(U[0], label='U')
