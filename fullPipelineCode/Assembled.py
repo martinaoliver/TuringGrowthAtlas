@@ -5,6 +5,7 @@ import traceback
 from itertools import product, chain
 
 
+
 #########################################
 ################# SETUP #################
 #########################################
@@ -31,7 +32,7 @@ def multiprocess_wrapper(function, items, cpu):
         p.join()
     return results
 
-from Part3_SOLVE_v2 import Solver
+from solver import Solver
 def run_solver(items):
     index, params, args = items
     index_list = [i for i in index]
@@ -89,13 +90,13 @@ if __name__ == '__main__':
 
     ################### PART ONE: ATLAS ########################
     print("Building atlas...")
-    from Part1_ATLAS import Atlas_Builder
+    from atlas import Atlas
     atlas = Atlas_Builder()
     atlas = atlas.create_adjacency_matrices(nodes = args['num_nodes'], diffusers = args['num_diffusers'])
 
     ################### PART TWO: PARAMETERS ###################
     print("Sampling parameters...")
-    from Part2_PARAMETERS import LHS
+    from parameters import LHS
     nsamples = args['num_samples']
     sampler = LHS(nsamples = args['num_samples'])
     params = sampler.sample_parameters()
