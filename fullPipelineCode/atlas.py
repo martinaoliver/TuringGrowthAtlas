@@ -1,7 +1,7 @@
 import numpy as np
 import itertools
 
-class Atlas_Builder:
+class Atlas:
 
     def __init__(self, nodes = 2, diffusers = 2):
         self.nodes = nodes
