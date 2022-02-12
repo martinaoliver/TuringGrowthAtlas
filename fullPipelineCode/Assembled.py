@@ -91,7 +91,7 @@ if __name__ == '__main__':
     ################### PART ONE: ATLAS ########################
     print("Building atlas...")
     from atlas import Atlas
-    atlas = Atlas_Builder()
+    atlas = Atlas()
     atlas = atlas.create_adjacency_matrices(nodes = args['num_nodes'], diffusers = args['num_diffusers'])
 
     ################### PART TWO: PARAMETERS ###################
