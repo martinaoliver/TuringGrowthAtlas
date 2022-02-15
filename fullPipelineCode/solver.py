@@ -17,25 +17,21 @@ np.random.seed(1)
 class NewtonRaphson:
     # Defines Newton Raphson methods for finding steadystates
 
-    def initiate_jacobian():
+    def initiate_jacobian(params, hill):
         # Generate Jacobian matrix
         # Retains expressions with X and Y as placeholder symbols
         X, Y = symbols('X'), symbols('Y')
-        arguments = Matrix([X, Y])
-        functions = Matrix(react([X, Y]))
-        jacobian_topology = functions.jacobian(arguments)
-        return jacobian_topology
+        functions = Matrix(Solver.react([X, Y], params, **hill))
+        jacobian_topology = functions.jacobian([X, Y])
+        return jacobian_topology, X, Y
 
-    def iterate(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+    def iterate(x_initial, params, hill, jac, X, Y, max_num_iter=15, tolerance=0.0001, alpha=1):
         # Perform NR iteration on one initial condition
-        # Max number of iterations is 15 by default
+        # Max number of iteration is 15 by default
         x = x_initial
-        fx = react(x)
+        fx = Solver.react(x, params, **hill)
         err = np.linalg.norm(fx)
         iter = 0
-        jac = jacobian1()
-        # print(jac)
-        X, Y = symbols('X'), symbols('Y')
 
         # perform the Newton-Raphson iteration
         while err > tolerance and iter < max_num_iter and np.all(x != 0):
@@ -56,15 +52,17 @@ class NewtonRaphson:
             if sum(item < 0 for item in x) == 0:
                 return (x, err, 0)
 
-    def run(initial_conditions):
+    def run(initial_conditions, params, hill):
         # Run Newton Raphson algorithm on multiple conditions
         # If steady state identified add to steady state list
         # Returns list of steady states
         count = 0
         SteadyState_list = []
+        jac, X, Y = NewtonRaphson.initiate_jacobian(params, hill)
         for n in range(len(initial_conditions)):
             xn = []
-            xn = newton_raphson(initial_conditions[n])
+            xn = NewtonRaphson.iterate(n, params, hill, jac, X, Y)
+
 
             if xn != None:
                 if count == 0:
@@ -177,10 +175,6 @@ class Solver:  # Defines iterative solver methods
         return np.array([fx, fy])
 
     def solve(p, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
-
-        for param in ['diffusion_x', 'diffusion_y']:
-            # Calculate alpha values for each species.
-            p[f"alphan_{param[-1]}"] = Solver.calculate_alpha(p[param], dx, dt)
 
         # Calculate A and B matrices for each species.
         if args["growth"] == None:
