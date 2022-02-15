@@ -161,15 +161,13 @@ class Solver:  # Defines iterative solver methods
             # Repression equation
             return lambda concentration: 1 / (1 + (concentration / rate) ** n))
 
-    def react(conc):
+    def react(conc, p, hillxx, hillxy, hillyx, hillyy):
+        # Function for performing one f(u,v) step
         X, Y = conc
-        f_x = p['production_x'] - p['degradation_x'] * X + p['max_conc_x'] * (
-            Solver.hill_equations(topology[0, 0], p['k_xx'], p['n'])(X)) * (
-                  Solver.hill_equations(topology[0, 1], p['k_yx'], p['n']))(Y)
-        f_y = p['production_y'] - p['degradation_y'] * Y + p['max_conc_y'] * (
-            Solver.hill_equations(topology[1, 0], p['k_xy'], p['n'])(X)) * (
-                  Solver.hill_equations(topology[1, 1], p['k_yy'], p['n']))(Y)
-        return np.array([f_x, f_y])
+        fx = p['production_x'] - p['degradation_x'] * X + p['max_conc_x'] * hillxx(X) * hillyx(Y)
+        fy = p['production_y'] - p['degradation_y'] * Y + p['max_conc_y'] * hillxy(X) * hillyy(Y)
+
+        return np.array([fx, fy])
 
     def solve(p, topology, args):
 
