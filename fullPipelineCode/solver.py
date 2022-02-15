@@ -115,6 +115,7 @@ class Solver:  # Defines iterative solver methods
 
 
     def loguniform(low=-3, high=3, size=None):
+        # Return a logarithmic distribution
         return (10) ** (np.random.uniform(low, high, size))
 
     def lhs_list(data, nsample):
@@ -136,8 +137,8 @@ class Solver:  # Defines iterative solver methods
         initial_conditions = Solver.lhs_list(data, n_initialconditions)
         return np.array(initial_conditions, dtype=np.float)
 
-    # define the initial value from steady state
     def create(steadystate, size, perturbation=0.001):
+        # define the initial value from steady state
         low = steadystate - perturbation
         high = steadystate + perturbation
         return np.random.uniform(low=low, high=high, size=size)
