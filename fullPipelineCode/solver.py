@@ -118,6 +118,8 @@ class Solver:  # Defines iterative solver methods
         return (10) ** (np.random.uniform(low, high, size))
 
     def lhs_list(data, nsample):
+        # This function accepts an already existing distribution and a required number of samples
+        # and outputs an array with samples distributed in a latin-hyper-cube sampling manner.
         nvar = data.shape[1]
         ran = np.random.uniform(size=(nsample, nvar))
         s = np.zeros((nsample, nvar))
@@ -128,6 +130,8 @@ class Solver:  # Defines iterative solver methods
         return s
 
     def lhs_initial_conditions(n_initialconditions=10, n_species=2):
+        # Input number of initial conditions needed and the number of species in each sample obtain an array with the
+        # initial conditions distributed in a lhs manner.
         data = np.column_stack(([Solver.loguniform(size=100000)] * n_species))
         initial_conditions = Solver.lhs_list(data, n_initialconditions)
         return np.array(initial_conditions, dtype=np.float)
