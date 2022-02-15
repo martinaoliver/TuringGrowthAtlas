@@ -154,11 +154,11 @@ class Solver:  # Defines iterative solver methods
 
         if interaction == 1:
             # Activation equation
-            return lambda concentration: 1 / (1 + np.float(abs(rate / concentration) ** n))
+            return lambda concentration: 1 / (1 + (rate / concentration) ** n))
 
         if interaction == -1:
             # Repression equation
-            return lambda concentration: 1 / (1 + np.float(abs(concentration / rate) ** n))
+            return lambda concentration: 1 / (1 + (concentration / rate) ** n))
 
     def solve(p, topology, args):
 
