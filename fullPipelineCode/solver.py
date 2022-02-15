@@ -182,12 +182,12 @@ class Solver:  # Defines iterative solver methods
     def solve(p, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         # Calculate A and B matrices for each species.
-        if args["growth"] == None:
+        if growth == None:
             A_matrices = [[Solver.a_matrix(p["alphan_x"], J), Solver.a_matrix(p["alphan_y"], J)]]
             B_matrices = [[Solver.b_matrix(p["alphan_x"], J), Solver.b_matrix(p["alphan_y"], J)]]
 
         # If growth is occurring, generate a list of A and B matrices for each new size.
-        if args["growth"] == "linear":
+        if growth == "linear":
             A_matrices = [[Solver.a_matrix(p["alphan_x"], j + 1), Solver.a_matrix(p["alphan_y"], j + 1)] for j in
                           range(J)]
             B_matrices = [[Solver.b_matrix(p["alphan_x"], j + 1), Solver.b_matrix(p["alphan_y"], j + 1)] for j in
@@ -210,9 +210,9 @@ class Solver:  # Defines iterative solver methods
         A_matrix = A_matrices[0]
         B_matrix = B_matrices[0]
 
-        if args['growth'] == None:
+        if growth == None:
             currentJ = J
-        elif args['growth'] == 'linear':
+        elif growth == 'linear':
             currentJ = 1
 
         # Begin solving.
@@ -229,8 +229,8 @@ class Solver:  # Defines iterative solver methods
                     concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n]))
                                           for n in range(2)]
 
-                    hour = ti / num_timepoints / args['total_time']
-                    if args["growth"] == "linear" and hour % 1 == 0:
+                    hour = ti / num_timepoints / total_time
+                    if growth == "linear" and hour % 1 == 0:
                         concentrations_new = [Solver.grow(c) for c in concentrations_new]
                         A_matrix = A_matrices[currentJ]
                         B_matrix = B_matrices[currentJ]
