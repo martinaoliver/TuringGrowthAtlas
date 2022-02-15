@@ -18,6 +18,8 @@ class NewtonRaphson:
     # Defines Newton Raphson methods for finding steadystates
 
     def initiate_jacobian():
+        # Generate Jacobian matrix
+        # Retains expressions with X and Y as placeholder symbols
         X, Y = symbols('X'), symbols('Y')
         arguments = Matrix([X, Y])
         functions = Matrix(react([X, Y]))
@@ -25,6 +27,8 @@ class NewtonRaphson:
         return jacobian_topology
 
     def iterate(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+        # Perform NR iteration on one initial condition
+        # Max number of iterations is 15 by default
         x = x_initial
         fx = react(x)
         err = np.linalg.norm(fx)
@@ -53,6 +57,9 @@ class NewtonRaphson:
                 return (x, err, 0)
 
     def run(initial_conditions):
+        # Run Newton Raphson algorithm on multiple conditions
+        # If steady state identified add to steady state list
+        # Returns list of steady states
         count = 0
         SteadyState_list = []
         for n in range(len(initial_conditions)):
