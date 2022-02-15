@@ -17,14 +17,14 @@ np.random.seed(1)
 class NewtonRaphson:
     # Defines Newton Raphson methods for finding steadystates
 
-    def jacobian1():
+    def initiate_jacobian():
         X, Y = symbols('X'), symbols('Y')
         arguments = Matrix([X, Y])
         functions = Matrix(react([X, Y]))
         jacobian_topology = functions.jacobian(arguments)
         return jacobian_topology
 
-    def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+    def iterate(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
         x = x_initial
         fx = react(x)
         err = np.linalg.norm(fx)
@@ -52,7 +52,7 @@ class NewtonRaphson:
             if sum(item < 0 for item in x) == 0:
                 return (x, err, 0)
 
-    def newtonraphson_run(initial_conditions):
+    def run(initial_conditions):
         count = 0
         SteadyState_list = []
         for n in range(len(initial_conditions)):
@@ -203,9 +203,7 @@ class Solver:  # Defines iterative solver methods
         )
 
 
-        # solve the steady state
-
-
+        # find the steady state
         initial_conditions1 = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = newtonraphson_run(initial_conditions1)
         print("Steady Done")
