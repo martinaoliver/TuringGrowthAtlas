@@ -47,21 +47,6 @@ class Solver:  # Defines iterative solver methods
         B = diags(diagonals, [-1, 0, 1]).toarray()
         return B
 
-    def hill_equations(interaction, rate, n):
-        # Returns hill equation as a lambda function for a specified interaction
-
-        if interaction == 0:
-            # No interaction between morphogens
-            return lambda concentration: 1
-
-        if interaction == 1:
-            # Activation equation
-            return lambda concentration: 1 / (1 + np.abs(
-                (rate / concentration)) ** n)  # This function is only formatted strangely to avoid an error.
-
-        if interaction == -1:
-            # Repression equation
-            return lambda concentration: 1 / (1 + np.abs((concentration / rate)) ** n)
 
     def loguniform(low=-3, high=3, size=None):
         return (10) ** (np.random.uniform(low, high, size))
