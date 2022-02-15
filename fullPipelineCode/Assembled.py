@@ -34,11 +34,11 @@ def multiprocess_wrapper(function, items, cpu):
 
 from solver import Solver
 def run_solver(items):
-    index, params, args = items
+    index, settings, args = items
     index_list = [i for i in index]
 
     try:
-        concs, ss = Solver.solve(p = params[0], topology = params[1],  **args)
+        concs, ss = Solver.solve(params = settings[0], topology = settings[1],  **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
