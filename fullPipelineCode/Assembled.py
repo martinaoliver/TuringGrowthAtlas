@@ -124,6 +124,8 @@ if __name__ == '__main__':
 
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
+    results = run_solver(items[0])
+    input()
     results = multiprocess_wrapper(run_solver, items, 1)
     results = {key:value for key, value in chain(*results)}
     print(results)

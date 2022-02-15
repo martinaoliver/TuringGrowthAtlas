@@ -38,12 +38,11 @@ class NewtonRaphson:
 
             jac_temp = jac.subs(X, x[0])
             jac_temp = jac_temp.subs(Y, x[1])
-            # print(jac)
             jac_temp = np.array(jac_temp, dtype=float)
 
             # update
             x = x - alpha * np.linalg.solve(jac_temp, fx)
-            fx = react(x)
+            fx = Solver.react(x, params, **hill)
             err = np.linalg.norm(fx)
             iter += 1
 
@@ -59,7 +58,7 @@ class NewtonRaphson:
         count = 0
         SteadyState_list = []
         jac, X, Y = NewtonRaphson.initiate_jacobian(params, hill)
-        for n in range(len(initial_conditions)):
+        for n in initial_conditions:
             xn = []
             xn = NewtonRaphson.iterate(n, params, hill, jac, X, Y)
 
@@ -225,7 +224,7 @@ class Solver:  # Defines iterative solver methods
 
                     concentrations_new = copy.deepcopy(concentrations)
 
-                    reactions = react(concentrations) * dt
+                    reactions = Solver.react(concentrations, params, **hill) * dt
                     concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n]))
                                           for n in range(2)]
 
