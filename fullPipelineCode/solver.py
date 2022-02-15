@@ -171,26 +171,26 @@ class Solver:  # Defines iterative solver methods
             # Repression equation
             return lambda concentration: 1 / (1 + (concentration / rate) ** n)
 
-    def react(conc, p, hillxx, hillxy, hillyx, hillyy):
+    def react(conc, params, hillxx, hillxy, hillyx, hillyy):
         # Function for performing one f(u,v) step
         X, Y = conc
-        fx = p['production_x'] - p['degradation_x'] * X + p['max_conc_x'] * hillxx(X) * hillyx(Y)
-        fy = p['production_y'] - p['degradation_y'] * Y + p['max_conc_y'] * hillxy(X) * hillyy(Y)
+        fx = params['production_x'] - params['degradation_x'] * X + params['max_conc_x'] * hillxx(X) * hillyx(Y)
+        fy = params['production_y'] - params['degradation_y'] * Y + params['max_conc_y'] * hillxy(X) * hillyy(Y)
 
         return np.array([fx, fy])
 
-    def solve(p, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
+    def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         # Calculate A and B matrices for each species.
         if growth == None:
-            A_matrices = [[Solver.a_matrix(p["alphan_x"], J), Solver.a_matrix(p["alphan_y"], J)]]
-            B_matrices = [[Solver.b_matrix(p["alphan_x"], J), Solver.b_matrix(p["alphan_y"], J)]]
+            A_matrices = [[Solver.a_matrix(params["alphan_x"], J), Solver.a_matrix(params["alphan_y"], J)]]
+            B_matrices = [[Solver.b_matrix(params["alphan_x"], J), Solver.b_matrix(params["alphan_y"], J)]]
 
         # If growth is occurring, generate a list of A and B matrices for each new size.
         if growth == "linear":
-            A_matrices = [[Solver.a_matrix(p["alphan_x"], j + 1), Solver.a_matrix(p["alphan_y"], j + 1)] for j in
+            A_matrices = [[Solver.a_matrix(params["alphan_x"], j + 1), Solver.a_matrix(params["alphan_y"], j + 1)] for j in
                           range(J)]
-            B_matrices = [[Solver.b_matrix(p["alphan_x"], j + 1), Solver.b_matrix(p["alphan_y"], j + 1)] for j in
+            B_matrices = [[Solver.b_matrix(params["alphan_x"], j + 1), Solver.b_matrix(params["alphan_y"], j + 1)] for j in
                           range(J)]
 
         # Define hill equations
