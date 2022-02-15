@@ -38,7 +38,7 @@ def run_solver(items):
     index_list = [i for i in index]
 
     try:
-        concs, ss = Solver.solve(p = params[0], topology = params[1], args = args)
+        concs, ss = Solver.solve(p = params[0], topology = params[1],  **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
@@ -100,6 +100,18 @@ if __name__ == '__main__':
     nsamples = args['num_samples']
     sampler = LHS(nsamples = args['num_samples'])
     params = sampler.sample_parameters()
+
+    # Prepare grid space, rate, and time
+    args["J"] = args["system_length"]
+    args["dx"] = args["J"] / (args["J"] - 1.)
+    args["num_timepoints"] = 10. * args["total_time"]
+    args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
+
+    for p in params:
+        # Calculate alpha values for each species.
+        for diff in ['diffusion_x', 'diffusion_y']:
+            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], args["dx"], args["dt"])
+
 
     # Join altas and params
     indexes = product(params.keys(), atlas.keys())

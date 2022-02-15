@@ -176,14 +176,7 @@ class Solver:  # Defines iterative solver methods
 
         return np.array([fx, fy])
 
-    def solve(p, topology, args):
-
-        J = args["system_length"]
-        dx = float(J) / (float(J) - 1)
-
-        total_time = args["total_time"]
-        num_timepoints = 10 * total_time
-        dt = float(total_time) / float(num_timepoints - 1)
+    def solve(p, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         for param in ['diffusion_x', 'diffusion_y']:
             # Calculate alpha values for each species.
@@ -208,7 +201,6 @@ class Solver:  # Defines iterative solver methods
             hillxy = Solver.hill_equations(topology[1, 0], params['k_xy'], params['n_xy']),
             hillyy = Solver.hill_equations(topology[1, 1], params['k_yy'], params['n_yy'])
         )
-
 
         # find the steady state
         initial_conditions1 = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
