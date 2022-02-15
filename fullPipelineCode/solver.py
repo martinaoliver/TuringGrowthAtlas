@@ -83,7 +83,7 @@ class NewtonRaphson:
 
 class Solver:  # Defines iterative solver methods
 
-    def calculate_alpha(D, dt, dx):
+    def calculate_alpha(D, dt, dx, **kwargs):
         # Calculate alpha variable
         # D is the diffusion coefficient
         # dt is time step
@@ -165,11 +165,11 @@ class Solver:  # Defines iterative solver methods
 
         if interaction == 1:
             # Activation equation
-            return lambda concentration: 1 / (1 + (rate / concentration) ** n))
+            return lambda concentration: 1 / (1 + (rate / concentration) ** n)
 
         if interaction == -1:
             # Repression equation
-            return lambda concentration: 1 / (1 + (concentration / rate) ** n))
+            return lambda concentration: 1 / (1 + (concentration / rate) ** n)
 
     def react(conc, p, hillxx, hillxy, hillyx, hillyy):
         # Function for performing one f(u,v) step
@@ -202,8 +202,8 @@ class Solver:  # Defines iterative solver methods
         )
 
         # find the steady state
-        initial_conditions1 = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
-        SteadyState_list = newtonraphson_run(initial_conditions1)
+        initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
+        SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
         print("Steady Done")
 
         # Set up starting conditions.

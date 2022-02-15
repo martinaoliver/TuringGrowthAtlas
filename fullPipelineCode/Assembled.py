@@ -110,7 +110,7 @@ if __name__ == '__main__':
     for p in params:
         # Calculate alpha values for each species.
         for diff in ['diffusion_x', 'diffusion_y']:
-            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], args["dx"], args["dt"])
+            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
 
 
     # Join altas and params
