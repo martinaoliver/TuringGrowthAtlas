@@ -14,6 +14,66 @@ import matplotlib.pyplot as plt
 
 np.random.seed(1)
 
+class NewtonRaphson:
+    # Defines Newton Raphson methods for finding steadystates
+    def jacobian1():
+        X, Y = symbols('X'), symbols('Y')
+        arguments = Matrix([X, Y])
+        functions = Matrix(react([X, Y]))
+        jacobian_topology = functions.jacobian(arguments)
+        return jacobian_topology
+
+    def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
+        x = x_initial
+        fx = react(x)
+        err = np.linalg.norm(fx)
+        iter = 0
+        jac = jacobian1()
+        # print(jac)
+        X, Y = symbols('X'), symbols('Y')
+
+        # perform the Newton-Raphson iteration
+        while err > tolerance and iter < max_num_iter and np.all(x != 0):
+
+            jac_temp = jac.subs(X, x[0])
+            jac_temp = jac_temp.subs(Y, x[1])
+            # print(jac)
+            jac_temp = np.array(jac_temp, dtype=float)
+
+            # update
+            x = x - alpha * np.linalg.solve(jac_temp, fx)
+            fx = react(x)
+            err = np.linalg.norm(fx)
+            iter += 1
+
+        # check that there are no negatives
+        if err < tolerance:
+            if sum(item < 0 for item in x) == 0:
+                return (x, err, 0)
+
+    def newtonraphson_run(initial_conditions):
+        count = 0
+        SteadyState_list = []
+        for n in range(len(initial_conditions)):
+            xn = []
+            xn = newton_raphson(initial_conditions[n])
+
+            if xn != None:
+                if count == 0:
+                    SteadyState_list.append(xn[0])
+                    count += 1
+                if count > 0:  # repeats check: compare with previous steady states
+                    logiclist = []
+                    for i in range(count):
+                        logiclist.append(
+                            np.allclose(SteadyState_list[i], xn[0], rtol=10 ** -2,
+                                        atol=0))  # PROCEED IF NO TRUES FOUND
+                    if not True in logiclist:  # no similar steady states previously found
+                        SteadyState_list.append(xn[0])
+                        count += 1
+
+        return SteadyState_list
+
 
 class Solver:  # Defines iterative solver methods
 
@@ -137,63 +197,7 @@ class Solver:  # Defines iterative solver methods
             return np.array([f_x, f_y])
 
         # solve the steady state
-        def jacobian1():
-            X, Y = symbols('X'), symbols('Y')
-            arguments = Matrix([X, Y])
-            functions = Matrix(react([X, Y]))
-            jacobian_topology = functions.jacobian(arguments)
-            return jacobian_topology
 
-        def newton_raphson(x_initial, max_num_iter=15, tolerance=0.0001, alpha=1):
-            x = x_initial
-            fx = react(x)
-            err = np.linalg.norm(fx)
-            iter = 0
-            jac = jacobian1()
-            # print(jac)
-            X, Y = symbols('X'), symbols('Y')
-
-            # perform the Newton-Raphson iteration
-            while err > tolerance and iter < max_num_iter and np.all(x != 0):
-
-                jac_temp = jac.subs(X, x[0])
-                jac_temp = jac_temp.subs(Y, x[1])
-                # print(jac)
-                jac_temp = np.array(jac_temp, dtype=float)
-
-                # update
-                x = x - alpha * np.linalg.solve(jac_temp, fx)
-                fx = react(x)
-                err = np.linalg.norm(fx)
-                iter += 1
-
-            # check that there are no negatives
-            if err < tolerance:
-                if sum(item < 0 for item in x) == 0:
-                    return (x, err, 0)
-
-        def newtonraphson_run(initial_conditions):
-            count = 0
-            SteadyState_list = []
-            for n in range(len(initial_conditions)):
-                xn = []
-                xn = newton_raphson(initial_conditions[n])
-
-                if xn != None:
-                    if count == 0:
-                        SteadyState_list.append(xn[0])
-                        count += 1
-                    if count > 0:  # repeats check: compare with previous steady states
-                        logiclist = []
-                        for i in range(count):
-                            logiclist.append(
-                                np.allclose(SteadyState_list[i], xn[0], rtol=10 ** -2,
-                                            atol=0))  # PROCEED IF NO TRUES FOUND
-                        if not True in logiclist:  # no similar steady states previously found
-                            SteadyState_list.append(xn[0])
-                            count += 1
-
-            return SteadyState_list
 
         initial_conditions1 = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = newtonraphson_run(initial_conditions1)
