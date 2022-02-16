@@ -26,7 +26,7 @@ def multiprocess_wrapper(function, items, cpu):
     processes = min(cpu, mp.cpu_count())
 
     with mp.Pool(processes) as p:
-        results = tqdm(p.imap(function, items), total=len(items))
+        results = list(tqdm(p.imap(function, items), total=len(items)))
         x = p.imap(function, items)
         p.close()
         p.join()
