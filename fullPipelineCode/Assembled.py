@@ -104,7 +104,7 @@ if __name__ == '__main__':
     # Prepare grid space, rate, and time
     args["J"] = args["system_length"]
     args["dx"] = args["J"] / (args["J"] - 1.)
-    args["num_timepoints"] = 10. * args["total_time"]
+    args["num_timepoints"] = int(10. * args["total_time"])
     args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
 
     for p in params:
