@@ -38,7 +38,7 @@ class NewtonRaphson:
 
             jac_temp = jac.subs(X, x[0])
             jac_temp = jac_temp.subs(Y, x[1])
-            jac_temp = np.array(jac_temp, dtype=float)
+            jac_temp = np.array(jac_temp, dtype=complex)
 
             # update
             x = x - alpha * np.linalg.solve(jac_temp, fx)
@@ -55,27 +55,40 @@ class NewtonRaphson:
         # Run Newton Raphson algorithm on multiple conditions
         # If steady state identified add to steady state list
         # Returns list of steady states
-        count = 0
+
         SteadyState_list = []
+
+        # initialise jacobian matrix
         jac, X, Y = NewtonRaphson.initiate_jacobian(params, hill)
-        for n in initial_conditions:
-            xn = []
-            xn = NewtonRaphson.iterate(n, params, hill, jac, X, Y)
 
+        # loop through sampled conditions
+        for condition in initial_conditions:
+            # Perform newton raphson iteration on one initial condition
+            xn = NewtonRaphson.iterate(condition, params, hill, jac, X, Y)
 
-            if xn != None:
-                if count == 0:
-                    SteadyState_list.append(xn[0])
-                    count += 1
-                if count > 0:  # repeats check: compare with previous steady states
-                    logiclist = []
-                    for i in range(count):
-                        logiclist.append(
-                            np.allclose(SteadyState_list[i], xn[0], rtol=10 ** -2,
-                                        atol=0))  # PROCEED IF NO TRUES FOUND
-                    if not True in logiclist:  # no similar steady states previously found
-                        SteadyState_list.append(xn[0])
-                        count += 1
+            # If xn is returned as a list check for duplicates in SteadyState_list,
+            # as well as complex numbers and negative numbers
+            if xn:
+                # Retrieve concentration arrays from xn
+                xs = xn[0]
+
+                # Check for complex components
+                if not isinstance(xs, complex):
+                    # Convert to float if no complex component
+                    xs = xs.real
+
+                    # Check for negative instances
+                    if np.all(xs > 0):
+                        if len(SteadyState_list) == 0:
+                            SteadyState_list.append(xs)
+                        else:
+                            # compare with previous steady states for duplicates
+                            logiclist = []
+                            for state in SteadyState_list:
+                                logiclist.append(
+                                    np.allclose(state, xs, rtol=10 ** -2,atol=0))  # PROCEED IF NO TRUES FOUND
+                            if not True in logiclist:  # no similar steady states previously found
+                                SteadyState_list.append(xs)
 
         return SteadyState_list
 
@@ -213,7 +226,7 @@ class Solver:  # Defines iterative solver methods
             currentJ = J
         elif growth == 'linear':
             currentJ = 1
-
+        print(SteadyState_list)
         # Begin solving.
         if SteadyState_list:
             conc_list = []

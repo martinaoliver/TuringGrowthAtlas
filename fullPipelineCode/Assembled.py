@@ -38,15 +38,15 @@ def run_solver(items):
     index_list = [i for i in index]
 
     try:
-        concs, ss = Solver.solve(params = settings[0], topology = settings[1],  **args)
+        concs, steadystates = Solver.solve(params = settings[0], topology = settings[1],  **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
         concs = list(zip(indexes, concs))
 
-        #ss = list(zip(indexes, ss))
-        return concs #ss
+        steadystates = list(zip(indexes, steadystates))
+        return concs, steadystates
 
     except:
         traceback.print_exc()
@@ -124,8 +124,6 @@ if __name__ == '__main__':
 
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
-    results = run_solver(items[0])
-    input()
     results = multiprocess_wrapper(run_solver, items, 1)
     results = {key:value for key, value in chain(*results)}
     print(results)
