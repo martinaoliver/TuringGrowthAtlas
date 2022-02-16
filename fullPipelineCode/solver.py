@@ -216,7 +216,6 @@ class Solver:  # Defines iterative solver methods
         # find the steady state
         initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
-        print("Steady Done")
 
         # Set up starting conditions.
         A_matrix = A_matrices[0]
@@ -226,7 +225,6 @@ class Solver:  # Defines iterative solver methods
             currentJ = J
         elif growth == 'linear':
             currentJ = 1
-        print(SteadyState_list)
         # Begin solving.
         if SteadyState_list:
             conc_list = []
@@ -252,7 +250,6 @@ class Solver:  # Defines iterative solver methods
 
                 conc_list.append(concentrations)
 
-            print("Solved")
             return conc_list, SteadyState_list
 
         else:

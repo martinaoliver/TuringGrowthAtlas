@@ -26,7 +26,7 @@ def multiprocess_wrapper(function, items, cpu):
     processes = min(cpu, mp.cpu_count())
 
     with mp.Pool(processes) as p:
-        results = p.imap(function, items)
+        results = tqdm(p.imap(function, items), total=len(items))
         x = p.imap(function, items)
         p.close()
         p.join()
@@ -61,10 +61,10 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=100,
-        total_time=99,
+        system_length=200,
+        total_time=199,
         num_samples=100,
-        growth=None
+        growth="linear"
     )
 
     for a in inputs:
@@ -124,6 +124,6 @@ if __name__ == '__main__':
 
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
-    results = multiprocess_wrapper(run_solver, items, 1)
+    results = multiprocess_wrapper(run_solver, items, 4)
     results = {key:value for key, value in chain(*results)}
     print(results)
