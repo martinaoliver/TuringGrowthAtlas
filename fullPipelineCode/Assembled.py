@@ -121,11 +121,14 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index,combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
-    items = items[:2]
 
     ################### PART THREE: SOLVE ######################
+
     print("Running solver...")
+
     results = multiprocess_wrapper(run_solver, items, 4)
+
+    print("Saving results...")
 
     with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
         pickle.dump(results, file)

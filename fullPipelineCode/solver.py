@@ -11,6 +11,7 @@ from scipy.special import logsumexp
 from scipy import optimize
 from sympy import *
 import matplotlib.pyplot as plt
+from scipy.fft import fft
 
 np.random.seed(1)
 
@@ -160,11 +161,11 @@ class Solver:  # Defines iterative solver methods
         # Add row
         array = np.concatenate((array, [array[-1]]))
 
-        if len(array.shape) == 2:
-            # 2D growth
-            end_column = np.array([array[:, -1]]).T
-            # Add column
-            array = np.concatenate((array, end_column), axis=1)
+        # if len(array.shape) == 2:
+        #     # 2D growth
+        #     end_column = np.array([array[:, -1]]).T
+        #     # Add column
+        #     array = np.concatenate((array, end_column), axis=1)
 
         return array
 
@@ -218,15 +219,15 @@ class Solver:  # Defines iterative solver methods
         SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
 
         # Set up starting conditions.
-        A_matrix = A_matrices[0]
-        B_matrix = B_matrices[0]
-
 
         # Begin solving.
         if SteadyState_list:
             conc_list = []
 
             for steady_conc in SteadyState_list:
+                A_matrix = A_matrices[0]
+                B_matrix = B_matrices[0]
+
                 if growth == None:
                     currentJ = J
                 elif growth == 'linear':
@@ -247,11 +248,13 @@ class Solver:  # Defines iterative solver methods
                         concentrations_new = [Solver.grow(c) for c in concentrations_new]
                         A_matrix = A_matrices[currentJ]
                         B_matrix = B_matrices[currentJ]
-                        print(currentJ)
                         currentJ += 1
 
                     concentrations = copy.deepcopy(concentrations_new)
-                print(currentJ)
+
+                if Solver.fourier_classify(concentrations):
+                    Solver.plot_conc(concentrations)
+                    # print("yes")
                 conc_list.append(concentrations)
 
             return conc_list, SteadyState_list
@@ -266,3 +269,26 @@ class Solver:  # Defines iterative solver methods
         plt.ylabel('Concentration')
         plt.legend()
         plt.show()
+
+    def fourier_classify(U, threshold = 2, plot = False):
+
+        # Compute the fourier transforms.
+        transforms = [fft(i) for i in U]
+
+        # Check for peaks.
+        peaks_found = False
+
+        for i in transforms:
+            for ii in i[1:]:
+                if abs(ii) > threshold:
+                    peaks_found = True
+
+        # Plot the fourier transforms.
+        # if plot:
+        #     for i in [0,1]:
+        #         freq = fftfreq(L,dx)
+        #         plt.plot(freq, abs(transforms[i]))
+        #         plt.xlim(0,)
+        #         plt.show()
+
+        return peaks_found
