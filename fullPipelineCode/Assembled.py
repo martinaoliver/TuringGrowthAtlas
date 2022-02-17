@@ -3,6 +3,7 @@ import sys
 import multiprocessing as mp
 import traceback
 from itertools import product, chain
+import pickle
 
 
 
@@ -125,5 +126,6 @@ if __name__ == '__main__':
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
     results = multiprocess_wrapper(run_solver, items, 4)
-    input()
-    results = {key:value for key, value in chain(*results)}
+
+    with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
+        pickle.dump(results, file)
