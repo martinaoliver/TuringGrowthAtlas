@@ -46,7 +46,7 @@ def run_solver(items):
         concs = list(zip(indexes, concs))
 
         steadystates = list(zip(indexes, steadystates))
-        return concs, steadystates
+        return concs
 
     except:
         traceback.print_exc()
@@ -63,7 +63,7 @@ def parse_args(inputs):
         num_diffusers=2,
         system_length=200,
         total_time=199,
-        num_samples=100,
+        num_samples=200,
         growth="linear"
     )
 
@@ -120,10 +120,10 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index,combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
-
+    items = items[:2]
 
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
     results = multiprocess_wrapper(run_solver, items, 4)
+    input()
     results = {key:value for key, value in chain(*results)}
-    print(results)

@@ -221,33 +221,37 @@ class Solver:  # Defines iterative solver methods
         A_matrix = A_matrices[0]
         B_matrix = B_matrices[0]
 
-        if growth == None:
-            currentJ = J
-        elif growth == 'linear':
-            currentJ = 1
+
         # Begin solving.
         if SteadyState_list:
             conc_list = []
+
             for steady_conc in SteadyState_list:
+                if growth == None:
+                    currentJ = J
+                elif growth == 'linear':
+                    currentJ = 1
+
                 concentrations = [Solver.create(steady_conc[i], size=currentJ) for i in range(2)]
 
                 for ti in range(num_timepoints):
-
                     concentrations_new = copy.deepcopy(concentrations)
 
                     reactions = Solver.react(concentrations, params, **hill) * dt
                     concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n]))
                                           for n in range(2)]
 
-                    hour = ti / num_timepoints / total_time
+                    hour = ti / (num_timepoints / total_time)
+
                     if growth == "linear" and hour % 1 == 0:
                         concentrations_new = [Solver.grow(c) for c in concentrations_new]
                         A_matrix = A_matrices[currentJ]
                         B_matrix = B_matrices[currentJ]
+                        print(currentJ)
                         currentJ += 1
 
                     concentrations = copy.deepcopy(concentrations_new)
-
+                print(currentJ)
                 conc_list.append(concentrations)
 
             return conc_list, SteadyState_list
