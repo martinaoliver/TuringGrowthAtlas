@@ -111,6 +111,7 @@ if __name__ == '__main__':
     for p in params:
         # Calculate alpha values for each species.
         for diff in ['diffusion_x', 'diffusion_y']:
+
             params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
 
 
@@ -123,6 +124,10 @@ if __name__ == '__main__':
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
     ################### PART THREE: SOLVE ######################
+
+    for i in items:
+        results = run_solver(i)
+        input()
 
     print("Running solver...")
 
