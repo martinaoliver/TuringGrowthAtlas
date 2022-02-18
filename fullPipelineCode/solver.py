@@ -86,18 +86,7 @@ class NewtonRaphson:
                                 np.allclose(state, xs, rtol=10 ** -2,atol=0))  # PROCEED IF NO TRUES FOUND
                         if not True in logiclist:  # no similar steady states previously found
                             SteadyState_list.append(xs)
-        print("Jacobian:")
-        print(jac)
-        print("Function:")
-        print(functions)
-        print("Steady states:")
-        print(SteadyState_list)
 
-        for i in SteadyState_list:
-            temp = functions.subs(X, i[0])
-            temp = temp.subs(Y, i[1])
-            print(temp)
-        input()
         return SteadyState_list
 
 
@@ -163,26 +152,14 @@ class Solver:  # Defines iterative solver methods
         high = steadystate + perturbation
         return np.random.uniform(low=low, high=high, size=size)
 
-    def grow(array):
-        # Grow grid
-        # Add row
-        array = np.concatenate((array, [array[-1]]))
 
-        if len(array.shape) == 2:
-            # 2D growth
-            end_column = np.array([array[:, -1]]).T
-            # Add column
-            array = np.concatenate((array, end_column), axis=1)
-
-        return array
-
-    def exponential_growth(initial_dx,t,s=0.0001):
+    def exponential_growth(initial_dx,dt,t,s=0.0001):
         return initial_dx*np.exp(s*t)
 
-    def linear_growth(initial_dx,t,s=0.00005):
+    def linear_growth(initial_dx,dt,t,s=0.00005):
         return initial_dx + t*s
 
-    def weird_growth(t):
+    def weird_growth(t,dt):
         s=0.01
         tf=1000
         return 40*(2+np.tanh(s*(t-tf/2)))
@@ -212,12 +189,17 @@ class Solver:  # Defines iterative solver methods
 
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
+        # Calculate diffussion matrices
+        if growth:
+            A_matrices = [[Solver.a_matrix(params["alphan_x"][i], J), Solver.a_matrix(params["alphan_y"][i], J)] for i in range(num_timepoints)]
+            B_matrices = [[Solver.b_matrix(params["alphan_x"][i], J), Solver.b_matrix(params["alphan_y"][i], J)] for i in range(num_timepoints)]
+
+        else:
+            A_matrices = [[Solver.a_matrix(params["alphan_x"][0], J), Solver.a_matrix(params["alphan_y"][0], J)]]
+            B_matrices = [[Solver.b_matrix(params["alphan_x"][0], J), Solver.b_matrix(params["alphan_y"][0], J)]]
+
+
         # Calculate A and B matrices for each species.
-
-        A_matrices = [Solver.a_matrix(params["alphan_x"], J), Solver.a_matrix(params["alphan_y"], J)]
-        B_matrices = [Solver.b_matrix(params["alphan_x"], J), Solver.b_matrix(params["alphan_y"], J)]
-
-
         # Define hill equations
         hill = dict(
             hillxx = Solver.hill_equations(topology[0, 0], params['k_xx'], params['n_xx']),
@@ -230,11 +212,6 @@ class Solver:  # Defines iterative solver methods
         initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
 
-        # Set up starting conditions.
-
-        # # Begin solving.
-        # print(SteadyState_list)
-        # input()
         if SteadyState_list:
             conc_list = []
 
@@ -253,20 +230,11 @@ class Solver:  # Defines iterative solver methods
                     concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n]))
                                           for n in range(2)]
 
-                    hour = ti / (num_timepoints / total_time)
-
-                    if growth == "linear" and hour % 1 == 0:
-                        concentrations_new = [Solver.grow(c) for c in concentrations_new]
-                        A_matrix = A_matrices[currentJ]
-                        B_matrix = B_matrices[currentJ]
-                        currentJ += 1
-
                     concentrations = copy.deepcopy(concentrations_new)
 
-                if Solver.fourier_classify(concentrations):
-                    Solver.plot_conc(concentrations)
-                    # print("yes")
-                conc_list.append(concentrations)
+                turing = Solver.fourier_classify(concentrations)
+
+                conc_list.append((concentrations, turing))
 
             return conc_list, SteadyState_list
 

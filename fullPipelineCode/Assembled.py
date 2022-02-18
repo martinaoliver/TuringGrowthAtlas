@@ -54,7 +54,6 @@ def run_solver(items):
         raise
 
 
-
 # Function for parsing command line arguments
 
 def parse_args(inputs):
@@ -62,10 +61,12 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=200,
-        total_time=199,
-        num_samples=200,
-        growth="linear"
+        system_length=100,
+        total_time=100,
+        num_samples=10000,
+        growth="linear",
+        growth_rate=0.1,
+        initial_dx=0.1
     )
 
     for a in inputs:
@@ -76,6 +77,25 @@ def parse_args(inputs):
             except:
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
+
+    # Prepare grid space, rate, and time
+    args["J"] = args["system_length"]
+    args["num_timepoints"] = int(10. * args["total_time"])
+    args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
+    hours = [i/(args["num_timepoints"] / args["total_time"]) for i in range(args["num_timepoints"])]
+
+    if args["growth"] == "None":
+        args["growth"] = None
+        args["dx"] = [args["initial_dx"]]
+
+    if args["growth"] == "exponential":
+        args["dx"] = [Solver.exponential_growth(args["initial_dx"], dt=args["dt"], t=i, s=args["growth_rate"]) for i in hours]
+
+    if args["growth"] == "linear":
+        args["dx"] = [Solver.linear_growth(args["initial_dx"], dt=args["dt"], t=i, s=args["growth_rate"]) for i in hours]
+
+    if args["growth"] == "weird":
+        args["dx"] = [Solver.weird_growth(args["initial_dx"], dt=args["dt"], t=i, s=args["growth_rate"]) for i in hours]
 
     return args
 
@@ -102,17 +122,12 @@ if __name__ == '__main__':
     sampler = LHS(nsamples = args['num_samples'])
     params = sampler.sample_parameters()
 
-    # Prepare grid space, rate, and time
-    args["J"] = args["system_length"]
-    args["dx"] = args["J"] / (args["J"] - 1.)
-    args["num_timepoints"] = int(10. * args["total_time"])
-    args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
 
     for p in params:
         # Calculate alpha values for each species.
         for diff in ['diffusion_x', 'diffusion_y']:
+            params[p][f"alphan_{diff[-1]}"] = [Solver.calculate_alpha(params[p][diff], args["dt"], i) for i in args["dx"]]
 
-            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
 
 
     # Join altas and params
@@ -124,11 +139,6 @@ if __name__ == '__main__':
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
     ################### PART THREE: SOLVE ######################
-
-    for i in items:
-        results = run_solver(i)
-        input()
-
     print("Running solver...")
 
     results = multiprocess_wrapper(run_solver, items, 4)
