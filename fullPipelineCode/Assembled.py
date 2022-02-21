@@ -107,11 +107,11 @@ if __name__ == '__main__':
     args["dx"] = args["J"] / (args["J"] - 1.)
     args["num_timepoints"] = int(10. * args["total_time"])
     args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
-
+            
+    # Calculate alpha values for each species.
     for p in params:
-        # Calculate alpha values for each species.
-        for diff in ['diffusion_x', 'diffusion_y']:
-            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
+        params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
+        params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
 
 
     # Join altas and params
