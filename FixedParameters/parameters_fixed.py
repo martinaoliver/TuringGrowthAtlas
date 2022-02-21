@@ -3,7 +3,7 @@ import pandas as pd
 
 class LHS: # Defines parameter sampling
 
-    def __init__(self, nsamples = 200, params = None):
+    def __init__(self, nsamples = 1, params = None):
         self.nsamples = nsamples
         self.params = {
             'production_x'  :  [0.1],#[0.1, 100],    # Production rate.
@@ -18,10 +18,10 @@ class LHS: # Defines parameter sampling
             'k_yx'          :  [3.1623],#[0.1, 100],
             'diffusion_x'   :  [1.],           # Diffusion constants.
             'diffusion_y'   :  [1000],#[0.001, 1000],
-            'n_xx'          :  [2,4],          # Hill coefficients.
-            'n_xy'          :  [2,4],
-            'n_yy'          :  [2,4],
-            'n_yx'          :  [2,4], 
+            'n_xx'          :  [2],          # Hill coefficients.
+            'n_xy'          :  [2],
+            'n_yy'          :  [2],
+            'n_yx'          :  [2], 
             }
 
     # Function generates value from log distribution (0.001 to 1000).

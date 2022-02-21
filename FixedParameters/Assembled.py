@@ -63,7 +63,7 @@ def parse_args(inputs):
         num_diffusers=2,
         system_length=200,
         total_time=199,
-        num_samples=100,
+        num_samples=1,
         growth="linear"
     )
 
@@ -107,10 +107,14 @@ if __name__ == '__main__':
     args["num_timepoints"] = int(10. * args["total_time"])
     args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
 
+    # for p in params:
+    #     # Calculate alpha values for each species.
+    #     for diff in ['diffusion_x', 'diffusion_y']:
+    #         params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
+    
     for p in params:
-        # Calculate alpha values for each species.
-        for diff in ['diffusion_x', 'diffusion_y']:
-            params[p][f"alphan_{diff[-1]}"] = Solver.calculate_alpha(params[p][diff], **args)
+        params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
+        params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
 
 
     # Join altas and params
@@ -118,7 +122,6 @@ if __name__ == '__main__':
     combinations = product(params.values(), atlas.values())
 
     params_and_arrays = {index: combination for index,combination in zip(indexes, combinations)}
-
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
 
