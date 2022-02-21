@@ -4,6 +4,8 @@ import multiprocessing as mp
 import traceback
 from itertools import product, chain
 import pickle
+from pprint import pprint
+import numpy as np
 
 
 
@@ -63,21 +65,21 @@ def parse_args(inputs):
         num_diffusers=2,
         system_length=100,
         total_time=100,
-        num_samples=10000,
-        growth="linear",
+        num_samples=100000,
+        growth="None",
         growth_rate=0.1,
-        initial_dx=0.1
+        initial_dx=0.1,
+        jobs=4
     )
 
     for a in inputs:
 
         if "-" in a:
             try:
-                command_line_input = int(inputs[inputs.index(a) + 1])
+                command_line_input = float(inputs[inputs.index(a) + 1])
             except:
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
-
     # Prepare grid space, rate, and time
     args["J"] = args["system_length"]
     args["num_timepoints"] = int(10. * args["total_time"])
@@ -97,6 +99,7 @@ def parse_args(inputs):
     if args["growth"] == "weird":
         args["dx"] = [Solver.weird_growth(args["initial_dx"], dt=args["dt"], t=i, s=args["growth_rate"]) for i in hours]
 
+
     return args
 
 
@@ -106,6 +109,7 @@ def parse_args(inputs):
 
 if __name__ == '__main__':
 
+
     print("Parsing inputs...")
     args = parse_args(sys.argv)
 
@@ -114,6 +118,7 @@ if __name__ == '__main__':
     from atlas import Atlas
     atlas = Atlas()
     atlas = atlas.create_adjacency_matrices(nodes = args['num_nodes'], diffusers = args['num_diffusers'])
+    atlas = {0:np.array([[1,1],[-1,0]])}
 
     ################### PART TWO: PARAMETERS ###################
     print("Sampling parameters...")
@@ -141,7 +146,7 @@ if __name__ == '__main__':
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
 
-    results = multiprocess_wrapper(run_solver, items, 4)
+    results = multiprocess_wrapper(run_solver, items, args["jobs"])
 
     print("Saving results...")
 
