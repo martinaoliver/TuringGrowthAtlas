@@ -6,13 +6,11 @@ from itertools import product, chain
 import pickle
 
 
-
 #########################################
 ################# SETUP #################
 #########################################
 
 def multiprocess_wrapper(function, items, cpu):
-
     ###########################################
     # Function: Parallelise input function    #
     #                                         #
@@ -33,20 +31,28 @@ def multiprocess_wrapper(function, items, cpu):
         p.join()
     return results
 
+
 from solver import Solver
+
+
 def run_solver(items):
     index, settings, args = items
     index_list = [i for i in index]
 
     try:
-        concs, steadystates = Solver.solve(params = settings[0], topology = settings[1],  **args)
+        concs, steadystates, LSA = Solver.solve(params=settings[0], topology=settings[1], **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
-        concs = list(zip(indexes, concs))
 
+        # return concentration
+        concs = list(zip(indexes, concs))
+        # return steady states
         steadystates = list(zip(indexes, steadystates))
+        # return LSA
+        LSA = list(zip(indexes, LSA))
+
         return concs
 
     except:
@@ -54,11 +60,9 @@ def run_solver(items):
         raise
 
 
-
 # Function for parsing command line arguments
 
 def parse_args(inputs):
-
     args = dict(
         num_nodes=2,
         num_diffusers=2,
@@ -92,14 +96,16 @@ if __name__ == '__main__':
     ################### PART ONE: ATLAS ########################
     print("Building atlas...")
     from atlas import Atlas
+
     atlas = Atlas()
-    atlas = atlas.create_adjacency_matrices(nodes = args['num_nodes'], diffusers = args['num_diffusers'])
+    atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
 
     ################### PART TWO: PARAMETERS ###################
     print("Sampling parameters...")
     from parameters import LHS
+
     nsamples = args['num_samples']
-    sampler = LHS(nsamples = args['num_samples'])
+    sampler = LHS(nsamples=args['num_samples'])
     params = sampler.sample_parameters()
 
     # Prepare grid space, rate, and time
@@ -107,18 +113,17 @@ if __name__ == '__main__':
     args["dx"] = args["J"] / (args["J"] - 1.)
     args["num_timepoints"] = int(10. * args["total_time"])
     args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
-            
+
     # Calculate alpha values for each species.
     for p in params:
         params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
         params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
 
-
     # Join altas and params
     indexes = product(params.keys(), atlas.keys())
     combinations = product(params.values(), atlas.values())
 
-    params_and_arrays = {index: combination for index,combination in zip(indexes, combinations)}
+    params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
@@ -130,5 +135,6 @@ if __name__ == '__main__':
 
     print("Saving results...")
 
-    with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
-        pickle.dump(results, file)
+    # Saving results
+    # with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
+    #     pickle.dump(results, file)
