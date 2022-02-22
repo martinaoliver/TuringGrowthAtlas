@@ -1,5 +1,3 @@
-# Author Xindong
-# Date 2022/2/9 15:51
 from tqdm import tqdm
 from datetime import datetime
 import numpy as np
@@ -192,6 +190,36 @@ class Solver:  # Defines iterative solver methods
 
         return np.array([fx, fy])
 
+    # Define LSA check functions
+    def diffusion_jacobian(params, hill, steady_state):
+        # Generate diffusion Jacobian matrix with steady state
+        X, Y = symbols('X'), symbols('Y')
+        functions = Matrix(Solver.react([X, Y], params, **hill))
+        jac = functions.jacobian([X, Y])
+        # Substitute X, Y with steady state value
+        Xs, Ys = steady_state
+        jac_diff = jac.subs(X, Xs)
+        jac_diff = jac_diff.subs(Y, Ys)
+        jac_diff = np.array(jac_diff, dtype=complex)
+
+        return jac_diff
+
+    def calculate_dispersion(params, hill, steady_state, top_dispersion=5000, n_species=2):
+        jac_diff = Solver.diffusion_jacobian(params, hill, steady_state)
+        wvn_list = np.array(list(range(0, top_dispersion + 1))) * np.pi / 100
+        count = 0
+        eigenvalues = np.zeros((len(wvn_list), n_species), dtype=np.complex)
+        Diff_matrix = np.array([[params['diffusion_x'], 0], [0, params['diffusion_y']]])
+
+        for wvn in wvn_list:
+            jac_temp = jac_diff - Diff_matrix * wvn**2 # calculate the diffusion jacobian matrix
+            eigenval, eigenvec = np.linalg.eig(jac_temp) # solve the eigenvalue
+            eigenvalues[count] = np.sort(eigenval) # sort eigenvalues
+            count += 1
+
+        return eigenvalues
+
+
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         # Calculate A and B matrices for each species.
@@ -214,17 +242,34 @@ class Solver:  # Defines iterative solver methods
             hillyy = Solver.hill_equations(topology[1, 1], params['k_yy'], params['n_yy'])
         )
 
-        # find the steady state
+
+        # Find the steady state
         initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
+
 
         # Set up starting conditions.
 
         # Begin solving.
         if SteadyState_list:
             conc_list = []
+            LSA_list = []
 
             for steady_conc in SteadyState_list:
+
+                # LSA check
+                turing = None # 0 for no typical turing, 1 for typical turing
+                K = None
+                eigen_v = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
+                eigen_v_min = eigen_v[:,1] # take the minimum eigenvalue, first column
+                eigen_min_r = eigen_v_min.real # take the real part
+                if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0: # check head and tail
+                    if np.max(eigen_min_r) > 0: # check the middle
+                        turing = 1
+                        K = np.argmax(eigen_min_r) * np.pi / 100 # find the wavenumber of maximum eigenvalue
+                LSA_list.append([turing,K])
+
+                # Crank Nicolson solver
                 A_matrix = A_matrices[0]
                 B_matrix = B_matrices[0]
 
@@ -257,10 +302,10 @@ class Solver:  # Defines iterative solver methods
                     # print("yes")
                 conc_list.append(concentrations)
 
-            return conc_list, SteadyState_list
+            return conc_list, SteadyState_list, LSA_list
 
         else:
-            return [None], [None]
+            return [None], [None], [None]
 
     def plot_conc(U):
         plt.plot(U[0], label='U')
