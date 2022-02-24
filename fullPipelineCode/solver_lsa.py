@@ -245,7 +245,7 @@ class Solver:  # Defines iterative solver methods
                 turing = None # 0 for no typical turing, 1 for typical turing
                 K = None
                 eigen_v = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
-                eigen_v_min = eigen_v[:,1] # take the minimum eigenvalue, first column
+                eigen_v_min = eigen_v[:,1] # take the maximum eigenvalue, second column
                 eigen_min_r = eigen_v_min.real # take the real part
                 if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0: # check head and tail
                     if np.max(eigen_min_r) > 0: # check the middle
