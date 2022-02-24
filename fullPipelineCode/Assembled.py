@@ -48,7 +48,7 @@ def run_solver(items):
         concs = list(zip(indexes, concs))
 
         steadystates = list(zip(indexes, steadystates))
-        return concs
+        return concs, steadystates
 
     except:
         traceback.print_exc()
