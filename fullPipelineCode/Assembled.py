@@ -40,14 +40,14 @@ def run_solver(items):
     index_list = [i for i in index]
 
     try:
-        concs, steadystates, LSA = Solver.solve(params=settings[0], topology=settings[1], **args)
+        concs, steadystates, LSA, fourier = Solver.solve(params=settings[0], topology=settings[1], **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
 
-        results = {i: {"concs": c, "steadystate":s, "LSA":l} for i,c,s,l in zip(indexes, concs, steadystates, LSA)}
+        results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
 
         return results
 
