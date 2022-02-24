@@ -4,6 +4,7 @@ import multiprocessing as mp
 import traceback
 from itertools import product, chain
 import pickle
+import numpy as np
 
 
 #########################################
@@ -31,7 +32,7 @@ def multiprocess_wrapper(function, items, cpu):
     return results
 
 
-from solver import Solver
+from solver_lsa import Solver
 
 
 def run_solver(items):
@@ -45,14 +46,10 @@ def run_solver(items):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
-        # return concentration
-        concs = list(zip(indexes, concs))
-        # return steady states
-        steadystates = list(zip(indexes, steadystates))
-        # return LSA
-        LSA = list(zip(indexes, LSA))
 
-        return concs
+        results = {i: {"concs": c, "steadystate":s, "LSA":l} for i,c,s,l in zip(indexes, concs, steadystates, LSA)}
+
+        return results
 
     except:
         traceback.print_exc()
@@ -82,6 +79,10 @@ def parse_args(inputs):
             except:
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
+
+
+    if args["growth"] == "None":
+        args["growth"] = None
 
     return args
 
@@ -128,15 +129,19 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
+    items = items[:2]
+
+    print("Saving parameters...")
+    with open("parameters.pkl", "wb") as file:
+        pickle.dump(params_and_arrays, file)
 
     ################### PART THREE: SOLVE ######################
-
     print("Running solver...")
 
     results = multiprocess_wrapper(run_solver, items, 4)
-
+    results = {k: v for d in results for k, v in d.items()}
     print("Saving results...")
 
     # Saving results
-    with open("/1t_results.pkl", "wb") as file:
+    with open("1t_results.pkl", "wb") as file:
         pickle.dump(results, file)

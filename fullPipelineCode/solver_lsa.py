@@ -167,7 +167,7 @@ class Solver:  # Defines iterative solver methods
 
         return array
 
-    def hill_equations(interaction, rate, n):
+    def hill_equations(interaction, rate):
         # Returns hill equation as a lambda function for a specified interaction
 
         if interaction == 0:
