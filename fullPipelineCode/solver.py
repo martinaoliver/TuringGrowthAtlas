@@ -164,7 +164,7 @@ class Solver:  # Defines iterative solver methods
         tf=1000
         return 40*(2+np.tanh(s*(t-tf/2)))
 
-    def hill_equations(interaction, rate, n):
+    def hill_equations(interaction, rate):
         # Returns hill equation as a lambda function for a specified interaction
 
         if interaction == 0:
@@ -173,11 +173,11 @@ class Solver:  # Defines iterative solver methods
 
         if interaction == 1:
             # Activation equation
-            return lambda concentration: 1 / (1 + (rate / concentration) ** n)
+            return lambda concentration: 1 / (1 + (rate / concentration) ** 2)
 
         if interaction == -1:
             # Repression equation
-            return lambda concentration: 1 / (1 + (concentration / rate) ** n)
+            return lambda concentration: 1 / (1 + (concentration / rate) ** 2)
 
     def react(conc, params, hillxx, hillxy, hillyx, hillyy):
         # Function for performing one f(u,v) step
@@ -202,10 +202,10 @@ class Solver:  # Defines iterative solver methods
         # Calculate A and B matrices for each species.
         # Define hill equations
         hill = dict(
-            hillxx = Solver.hill_equations(topology[0, 0], params['k_xx'], params['n_xx']),
-            hillyx = Solver.hill_equations(topology[0, 1], params['k_yx'], params['n_yx']),
-            hillxy = Solver.hill_equations(topology[1, 0], params['k_xy'], params['n_xy']),
-            hillyy = Solver.hill_equations(topology[1, 1], params['k_yy'], params['n_yy'])
+            hillxx = Solver.hill_equations(topology[0, 0], params['k_xx']),
+            hillyx = Solver.hill_equations(topology[0, 1], params['k_yx']),
+            hillxy = Solver.hill_equations(topology[1, 0], params['k_xy']),
+            hillyy = Solver.hill_equations(topology[1, 1], params['k_yy'])
         )
 
         # find the steady state
