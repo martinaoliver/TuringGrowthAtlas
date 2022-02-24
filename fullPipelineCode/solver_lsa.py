@@ -226,10 +226,10 @@ class Solver:  # Defines iterative solver methods
 
         # Define hill equations
         hill = dict(
-            hillxx=Solver.hill_equations(topology[0, 0], params['k_xx'], params['n_xx']),
-            hillyx=Solver.hill_equations(topology[0, 1], params['k_yx'], params['n_yx']),
-            hillxy=Solver.hill_equations(topology[1, 0], params['k_xy'], params['n_xy']),
-            hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'], params['n_yy'])
+            hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
+            hillyx=Solver.hill_equations(topology[0, 1], params['k_yx']),
+            hillxy=Solver.hill_equations(topology[1, 0], params['k_xy']),
+            hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
         )
 
         initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
