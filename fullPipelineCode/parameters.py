@@ -16,8 +16,8 @@ class LHS: # Defines parameter sampling
             'k_xy'          :  [0.1, 100],
             'k_yy'          :  [0.1, 100],
             'k_yx'          :  [0.1, 100],
-            'diffusion_x'   :  [1.],           # Diffusion constants.
-            'diffusion_y'   :  [0.001, 1000],
+            'diffusion_x'   :  [0.001, 10],           # Diffusion constants.
+            'diffusion_y'   :  [1.],
             }
 
     # Function generates value from log distribution (0.001 to 1000).

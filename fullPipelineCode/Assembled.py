@@ -26,7 +26,6 @@ def multiprocess_wrapper(function, items, cpu):
 
     with mp.Pool(processes) as p:
         results = list(tqdm(p.imap(function, items), total=len(items)))
-        x = p.imap(function, items)
         p.close()
         p.join()
     return results
@@ -66,10 +65,13 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=200,
-        total_time=199,
-        num_samples=200,
-        growth="linear"
+        system_length=50,
+        total_time=1000,
+        num_samples=100000,
+        growth="None",
+        growth_rate=0.1,
+        dx=0.3,
+        jobs=4
     )
 
     for a in inputs:
@@ -99,6 +101,7 @@ if __name__ == '__main__':
 
     atlas = Atlas()
     atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
+    atlas = {0:np.array([[1,1],[-1,0]])}
 
     ################### PART TWO: PARAMETERS ###################
     print("Sampling parameters...")
@@ -110,9 +113,8 @@ if __name__ == '__main__':
 
     # Prepare grid space, rate, and time
     args["J"] = args["system_length"]
-    args["dx"] = args["J"] / (args["J"] - 1.)
-    args["num_timepoints"] = int(10. * args["total_time"])
-    args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
+    args["num_timepoints"] = int(12. * args["total_time"])
+    args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
 
     # Calculate alpha values for each species.
     for p in params:
@@ -136,5 +138,5 @@ if __name__ == '__main__':
     print("Saving results...")
 
     # Saving results
-    # with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
-    #     pickle.dump(results, file)
+    with open("/1t_results.pkl", "wb") as file:
+        pickle.dump(results, file)
