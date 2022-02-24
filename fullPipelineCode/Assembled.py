@@ -4,6 +4,7 @@ import multiprocessing as mp
 import traceback
 from itertools import product, chain
 import pickle
+import numpy as np
 
 
 #########################################
@@ -26,13 +27,12 @@ def multiprocess_wrapper(function, items, cpu):
 
     with mp.Pool(processes) as p:
         results = list(tqdm(p.imap(function, items), total=len(items)))
-        x = p.imap(function, items)
         p.close()
         p.join()
     return results
 
 
-from solver import Solver
+from solver_lsa import Solver
 
 
 def run_solver(items):
@@ -40,20 +40,16 @@ def run_solver(items):
     index_list = [i for i in index]
 
     try:
-        concs, steadystates, LSA = Solver.solve(params=settings[0], topology=settings[1], **args)
+        concs, steadystates, LSA, fourier = Solver.solve(params=settings[0], topology=settings[1], **args)
         indexes = []
         for i in range(len(concs)):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
-        # return concentration
-        concs = list(zip(indexes, concs))
-        # return steady states
-        steadystates = list(zip(indexes, steadystates))
-        # return LSA
-        LSA = list(zip(indexes, LSA))
 
-        return concs
+        results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
+
+        return results
 
     except:
         traceback.print_exc()
@@ -66,10 +62,13 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=200,
-        total_time=199,
-        num_samples=200,
-        growth="linear"
+        system_length=50,
+        total_time=1000,
+        num_samples=100000,
+        growth="None",
+        growth_rate=0.1,
+        dx=0.3,
+        jobs=4
     )
 
     for a in inputs:
@@ -80,6 +79,10 @@ def parse_args(inputs):
             except:
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
+
+
+    if args["growth"] == "None":
+        args["growth"] = None
 
     return args
 
@@ -99,6 +102,7 @@ if __name__ == '__main__':
 
     atlas = Atlas()
     atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
+    atlas = {0:np.array([[1,1],[-1,0]])}
 
     ################### PART TWO: PARAMETERS ###################
     print("Sampling parameters...")
@@ -110,9 +114,8 @@ if __name__ == '__main__':
 
     # Prepare grid space, rate, and time
     args["J"] = args["system_length"]
-    args["dx"] = args["J"] / (args["J"] - 1.)
-    args["num_timepoints"] = int(10. * args["total_time"])
-    args["dt"] = args["total_time"] / (args["num_timepoints"] - 1.)
+    args["num_timepoints"] = int(12. * args["total_time"])
+    args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
 
     # Calculate alpha values for each species.
     for p in params:
@@ -127,14 +130,17 @@ if __name__ == '__main__':
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
-    ################### PART THREE: SOLVE ######################
+    print("Saving parameters...")
+    with open("parameters.pkl", "wb") as file:
+        pickle.dump(params_and_arrays, file)
 
+    ################### PART THREE: SOLVE ######################
     print("Running solver...")
 
     results = multiprocess_wrapper(run_solver, items, 4)
-
+    results = {k: v for d in results for k, v in d.items()}
     print("Saving results...")
 
     # Saving results
-    # with open("/Users/sammoney-kyrle/Google Drive/TuringGrowthAtlas/results/2d_100_params_results.pkl", "wb") as file:
-    #     pickle.dump(results, file)
+    with open("1t_results.pkl", "wb") as file:
+        pickle.dump(results, file)
