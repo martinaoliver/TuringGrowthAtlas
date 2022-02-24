@@ -129,7 +129,6 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
-    items = items[:2]
 
     print("Saving parameters...")
     with open("parameters.pkl", "wb") as file:
