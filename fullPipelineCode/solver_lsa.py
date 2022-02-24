@@ -336,10 +336,10 @@ class Solver:  # Defines iterative solver methods
 
                     concentrations = copy.deepcopy(concentrations_new)
                     
-                if Solver.fourier_classify(concentrations):
-                    fourier = Solver.fourier_classify(concentrations)
-                    #Solver.plot_conc(concentrations)
-                    print("Found one!")
+                fourier = Solver.fourier_classify(concentrations)
+                if fourier:
+                    print('Found one!')
+                    
                 conc_list.append(concentrations)
 
             return conc_list, SteadyState_list, LSA_list, fourier
