@@ -10,23 +10,6 @@ import numpy as np
 #########################################
 ################# SETUP #################
 #########################################
-
-# Import results.
-infile = open('1t_results.pkl','rb')
-results_dict = pickle.load(infile)
-infile.close()
-
-# Import parameters.
-infile = open('parameters.pkl','rb')
-parameter_data = pickle.load(infile)
-infile.close()
-
-# Loop through results to identify hits.
-hits = {}
-for i in results_dict:
-    if results_dict[i]['Fourier'] == False:
-        hits[i] = results_dict[i]
-        
         
 
 def multiprocess_wrapper(function, items, cpu):
