@@ -340,7 +340,7 @@ class Solver:  # Defines iterative solver methods
                 fourier = Solver.fourier_classify(concentrations)
                 if fourier:
                     print('Found one!')
-                    Solver.plot_conc(concentrations)
+                    #Solver.plot_conc(concentrations)
                 fourier_list.append(fourier)
                     
                 conc_list.append(concentrations)
