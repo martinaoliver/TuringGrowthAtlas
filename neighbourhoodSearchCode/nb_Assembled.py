@@ -86,7 +86,9 @@ def parse_args(inputs):
         growth="None",
         growth_rate=0.1,
         dx=0.3,
-        jobs=4
+        jobs=4,
+        results='1t_results.pkl',
+        parameters='parameters.pkl'
     )
 
     for a in inputs:
@@ -115,6 +117,22 @@ if __name__ == '__main__':
     args = parse_args(sys.argv)
     
     # Run the solver for each hit and save in a separate file.
+    
+    # Import results.
+    infile = open(args['results'],'rb')
+    results_dict = pickle.load(infile)
+    infile.close()
+    
+    # Import parameters.
+    infile = open(args['parameters'],'rb')
+    parameter_data = pickle.load(infile)
+    infile.close()
+    
+    # Loop through results to identify hits.
+    hits = {}
+    for i in results_dict:
+        if results_dict[i]['Fourier'] == False:
+            hits[i] = results_dict[i]
     
     for hit in hits:
 
