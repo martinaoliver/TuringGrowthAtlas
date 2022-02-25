@@ -348,11 +348,21 @@ class Solver:  # Defines iterative solver methods
             return conc_list, SteadyState_list, LSA_list, fourier_list
 
     def plot_conc(U):
-        plt.plot(U[0], label='U')
-        plt.plot(U[1], label='V')
-        plt.xlabel('Space')
-        plt.ylabel('Concentration')
-        plt.legend()
+        
+        fig, ax1 = plt.subplots()
+        color = 'tab:green'
+        ax1.set_xlabel('Space')
+        ax1.set_ylabel('Concentration x', color = color)
+        ax1.plot(U[0], color = color)
+        ax1.tick_params(axis = 'y')
+        
+        ax2 = ax1.twinx()
+        color = 'tab:blue'
+        ax2.set_ylabel('Concentration y', color = color)
+        ax2.plot(U[1], color = color)
+        ax2.tick_params(axis='y')
+        
+        fig.tight_layout()
         plt.show()
 
     def fourier_classify(U, threshold = 2, plot = False):
@@ -362,7 +372,6 @@ class Solver:  # Defines iterative solver methods
 
         # Check for peaks.
         peaks_found = False
-
         for i in transforms:
             for ii in i[1:]:
                 if abs(ii) > threshold:
