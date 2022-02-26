@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import linalg as LA
-from class_circuit_eq import *
 import itertools
 
 # Head check
@@ -41,7 +40,7 @@ def stability_no_diffusion(eigenvalues):
     return ss_class, complex_ss, stability_ss
 
 # Curve check
-def stability_diffusion(eigenvalues, ss_class, complex_ss, stability_ss):
+def stability_diffusion(eigenvalues, complex_ss, stability_ss):
     maxeig = np.amax(eigenvalues) #highest eigenvalue of all wvn's and all the 6 eigenvalues.
     maxeig_real = maxeig.real #real part of maxeig
 

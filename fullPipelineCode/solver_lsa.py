@@ -302,9 +302,9 @@ class Solver:  # Defines iterative solver methods
                 # LSA check
                 eigenvalues = Solver.calculate_dispersion(params, hill, steady_conc)  # calculate the eigenvalue
                 ss_class, complex_ss, stability_ss = LSA_Analysis.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
-                system_class, maxeig = LSA_Analysis.stability_no_diffusion(eigenvalues, ss_class, complex_ss, stability_ss)  # LSA diffusion (curve analysis)
+                system_class, maxeig = LSA_Analysis.stability_diffusion(eigenvalues, complex_ss, stability_ss)  # LSA diffusion (curve analysis)
 
-                LSA = [ss_class, system_class, maxeig]
+                LSA = [stability_ss, ss_class, system_class, maxeig]
 
                 LSA_list.append(LSA)
 
