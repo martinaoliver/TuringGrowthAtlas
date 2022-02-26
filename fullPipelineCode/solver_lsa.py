@@ -10,6 +10,11 @@ from scipy import optimize
 from sympy import *
 import matplotlib.pyplot as plt
 from scipy.fft import fft
+# LSA Analysis
+import LSA_Analysis
+
+
+
 
 np.random.seed(1)
 
@@ -298,16 +303,13 @@ class Solver:  # Defines iterative solver methods
             for steady_conc in SteadyState_list:
 
                 # LSA check
-                turing = None # 0 for no typical turing, 1 for typical turing
-                K = None
-                eigen_v = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
-                eigen_v_min = eigen_v[:,1] # take the minimum eigenvalue, first column
-                eigen_min_r = eigen_v_min.real # take the real part
-                if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0: # check head and tail
-                    if np.max(eigen_min_r) > 0: # check the middle
-                        turing = 1
-                        K = np.argmax(eigen_min_r) * np.pi / 100 # find the wavenumber of maximum eigenvalue
-                LSA_list.append([turing,K])
+                eigenvalues = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
+                ss_class, complex_ss, stability_ss = LSA_Analysis.stability_no_diffusion(eigenvalues) # LSA no diffusion (k=0)
+                system_class, maxeig = LSA_Analysis.stability_no_diffusion(eigenvalues, ss_class, complex_ss, stability_ss) # LSA diffusion (curve analysis)
+
+                LSA = [ss_class, system_class, maxeig]
+
+                LSA_list.append(LSA)
 
                 # Crank Nicolson solver
                 A_matrix = A_matrices[0]
@@ -339,7 +341,7 @@ class Solver:  # Defines iterative solver methods
                     
                 fourier = Solver.fourier_classify(concentrations)
                 if fourier:
-                    print('Found one!')
+                    # print('Found one!')
                     Solver.plot_conc(concentrations)
                 fourier_list.append(fourier)
                     
@@ -353,7 +355,7 @@ class Solver:  # Defines iterative solver methods
         plt.xlabel('Space')
         plt.ylabel('Concentration')
         plt.legend()
-        plt.show()
+        # plt.show()
 
     def fourier_classify(U, threshold = 2, plot = False):
 
