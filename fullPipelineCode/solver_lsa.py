@@ -10,6 +10,8 @@ from scipy import optimize
 from sympy import *
 import matplotlib.pyplot as plt
 from scipy.fft import fft
+# LSA analysis
+import LSA_Analysis
 
 np.random.seed(1)
 
@@ -299,10 +301,8 @@ class Solver:  # Defines iterative solver methods
 
                 # LSA check
                 eigenvalues = Solver.calculate_dispersion(params, hill, steady_conc)  # calculate the eigenvalue
-                ss_class, complex_ss, stability_ss = LSA_Analysis.stability_no_diffusion(
-                    eigenvalues)  # LSA no diffusion (k=0)
-                system_class, maxeig = LSA_Analysis.stability_no_diffusion(eigenvalues, ss_class, complex_ss,
-                                                                           stability_ss)  # LSA diffusion (curve analysis)
+                ss_class, complex_ss, stability_ss = LSA_Analysis.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
+                system_class, maxeig = LSA_Analysis.stability_no_diffusion(eigenvalues, ss_class, complex_ss, stability_ss)  # LSA diffusion (curve analysis)
 
                 LSA = [ss_class, system_class, maxeig]
 
