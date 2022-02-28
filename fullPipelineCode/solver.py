@@ -314,10 +314,7 @@ class Solver:  # Defines iterative solver methods
                     concentrations_new = copy.deepcopy(concentrations)
                     concs_react = [conc[conc!=0] for conc in concentrations_new]
                     reactions = Solver.react(concs_react, params, **hill) * dt
-                    reactions_padded = copy.deepcopy(concentrations_new)
-                    for i in range(len(reactions_padded)):
-                        reactions_padded[i][full] = reactions[i]
-                    concentrations_new = [np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
+                    concentrations_new = [np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions[n]))
                                           for n in range(2)]
 
                     hour = ti / (num_timepoints / total_time)
