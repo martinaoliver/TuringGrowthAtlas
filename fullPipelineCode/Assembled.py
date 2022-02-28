@@ -5,6 +5,7 @@ import traceback
 from itertools import product, chain
 import pickle
 import numpy as np
+import datetime
 
 
 #########################################
@@ -64,7 +65,7 @@ def parse_args(inputs):
         num_diffusers=2,
         system_length=50,
         total_time=1000,
-        num_samples=100000,
+        num_samples=1,
         growth="None",
         growth_rate=0.1,
         dx=0.3,
@@ -131,7 +132,10 @@ if __name__ == '__main__':
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
     print("Saving parameters...")
-    with open("parameters.pkl", "wb") as file:
+    timestamp = str(datetime.datetime.now())
+    timestamp = timestamp.replace(':', '-')[:19]
+    timestamp = timestamp.replace(' ', '_')
+    with open(f"{timestamp}_parameters.pkl", "wb") as file:
         pickle.dump(params_and_arrays, file)
 
     ################### PART THREE: SOLVE ######################
@@ -142,5 +146,5 @@ if __name__ == '__main__':
     print("Saving results...")
 
     # Saving results
-    with open("1t_results.pkl", "wb") as file:
+    with open(f"{timestamp}_results.pkl", "wb") as file:
         pickle.dump(results, file)
