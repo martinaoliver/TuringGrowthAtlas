@@ -326,24 +326,16 @@ class Solver:  # Defines iterative solver methods
 
                     concentrations = copy.deepcopy(concentrations_new)
 
-                # Solver.plot_growth(bool_list)
                 fourier = Solver.fourier_classify(concentrations)
                 if fourier:
                     print('Found one!')
-                    Solver.plot_conc(concentrations)
                 fourier_list.append(fourier)
                 conc_list.append(concentrations)
 
             return conc_list, SteadyState_list, LSA_list, fourier_list
 
-    def plot_growth(bool_list):
-        x = np.array([j*0.3 for j in range(50)])
-        t = np.linspace(0,999,1000)
-        plt.contourf(x,t,bool_list)
-        plt.colorbar()
-        plt.ylabel('Time')
-        plt.xlabel('Space')
-        plt.show()
+        else:
+            return [None], [None], [None], [None]
 
     def plot_conc(U):
 
