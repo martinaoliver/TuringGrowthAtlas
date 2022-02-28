@@ -5,6 +5,7 @@ import traceback
 from itertools import product, chain
 import pickle
 import numpy as np
+import datetime
 
 
 #########################################
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     # Loop through results to identify hits.
     hits = {}
     for i in results_dict:
-        if results_dict[i]['Fourier'] == False:
+        if results_dict[i]['Fourier'] == True:
             hits[i] = results_dict[i]
     
     for hit in hits:
@@ -155,7 +156,10 @@ if __name__ == '__main__':
         items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
     
         print("Saving parameters...")
-        with open(f"Parameters/{hit}_neighbourhood_parameters.pkl", "wb") as file:
+        timestamp = str(datetime.datetime.now())
+        timestamp = timestamp.replace(':', '-')[:19]
+        timestamp = timestamp.replace(' ', '_')
+        with open(f"Parameters/{hit}_neighbourhood_parameters_{timestamp}.pkl", "wb") as file:
             pickle.dump(params_and_arrays, file)
     
         ################### PART THREE: SOLVE ######################
@@ -166,5 +170,5 @@ if __name__ == '__main__':
         print("Saving results...")
     
         # Saving results
-        with open(f"Results/{hit}_results.pkl", "wb") as file:
+        with open(f"Results/{hit}_results_{timestamp}.pkl", "wb") as file:
             pickle.dump(results, file)
