@@ -72,6 +72,8 @@ def parse_args(inputs):
         jobs=4,
         neighbourhood=False,
         upload_params=False,
+        results_file=None,
+        param_file=None
     )
 
     for a in inputs:
@@ -118,7 +120,7 @@ if __name__ == '__main__':
         # If a pre-existing parameter file is to be used then load it.
         if args['upload_params'] == True:
 
-            infile = open(input('Input filename of parameters: '), 'rb')
+            infile = open(args['upload_params'], 'rb')
             parameter_data = pickle.load(infile)
             infile.close()
             params_and_arrays = parameter_data
@@ -165,7 +167,7 @@ if __name__ == '__main__':
             print("Saving results...")
 
             # Saving results
-            with open(f"{timestamp}_results.pkl", "wb") as file:
+            with open(f"{args['growth']}_results.pkl", "wb") as file:
                 pickle.dump(results_dict, file)
 
 
@@ -173,19 +175,21 @@ if __name__ == '__main__':
     if args['neighbourhood']:
 
         # Import prior results.
-        infile = open(input('Input filename of results: '), 'rb')
+        infile = open(args['results_file'], 'rb')
         results_dict = pickle.load(infile)
         infile.close()
 
         # Import parameters.
-        infile = open(input('Input filename of parameters: '), 'rb')
+        infile = open(args['param_file'], 'rb')
         parameter_data = pickle.load(infile)
         infile.close()
 
         # Loop through results to identify hits.
         hits = {}
         for i in results_dict:
-            if not results_dict[i]['Fourier'][0] and not results_dict[i]['Fourier'][1]:
+            print(results_dict[i]['Fourier'][0])
+            print(results_dict[i]['Fourier'][1])
+            if not results_dict[i]['Fourier'][0]:# and not results_dict[i]['Fourier'][1]:
                 hits[i] = results_dict[i]
 
         for hit in hits:
@@ -231,10 +235,6 @@ if __name__ == '__main__':
 
             ################### PART THREE: SOLVE ######################
 
-            confirm = input('Have you made a folder called Results in the working directory? (y/n) ')
-            while confirm != 'y':
-                confirm = input('Make one and type y when you have.')
-
             timestamp = str(datetime.datetime.now())
             timestamp = timestamp.replace(':', '-')[:16]
             timestamp = timestamp.replace(' ', '_')
@@ -250,5 +250,5 @@ if __name__ == '__main__':
                 print("Saving results...")
 
                 # Saving results
-                with open(f"{timestamp}_results.pkl", "wb") as file:
+                with open(f"{hit}_results.pkl", "wb") as file:
                     pickle.dump(results_dict, file)
