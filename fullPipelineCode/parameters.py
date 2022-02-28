@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
+np.random.seed(1)
 
 class LHS: # Defines parameter sampling
 
-    np.random.seed(1)
+
 
     def __init__(self, nsamples = 200, params = None):
         self.nsamples = nsamples
@@ -24,14 +25,13 @@ class LHS: # Defines parameter sampling
 
     # Function generates value from log distribution (0.001 to 1000).
     def loguniform(self,low=-3, high=3, size=None):
-        np.random.seed(1)
+
         return (10) ** (np.random.uniform(low, high, size))
 
     # Function generates non-overlapping samples from a distribution (latin hypercube sampling).
     # (data = distribution, nsample = number of desired samples)
 
     def lhs(self,data):
-        np.random.seed(1)
         P = 100*(np.random.permutation(self.nsamples) + 1 - np.random.uniform(size=(self.nsamples)))/self.nsamples
         s = np.percentile(data, P)
         return s

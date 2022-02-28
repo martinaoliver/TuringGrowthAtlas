@@ -71,7 +71,7 @@ def parse_args(inputs):
         dx=0.3,
         jobs=4,
         neighbourhood=False,
-        upload_params=False
+        upload_params=False,
     )
 
     for a in inputs:
@@ -102,10 +102,10 @@ if __name__ == '__main__':
 
         ################### PART ONE: ATLAS ########################
         print("Building atlas...")
-        from atlas import Atlas
-
-        atlas = Atlas()
-        atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
+        # from atlas import Atlas
+        #
+        # atlas = Atlas()
+        # atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
         atlas = {0:np.array([[1,1],[-1,0]])}
 
         ################### PART TWO: PARAMETERS ###################
@@ -154,21 +154,23 @@ if __name__ == '__main__':
         timestamp = timestamp.replace(':', '-')[:16]
         timestamp = timestamp.replace(' ', '_')
 
-        chunks = [items[x:x+10000] for x in range(0, len(items), 10000)]
+        chunks = [items[x:x+int(len(items)/10)] for x in range(0, len(items), int(len(items)/10))]
         results_dict = dict()
         for i in chunks:
             print("Running solver...")
-            results = multiprocess_wrapper(run_solver, i, 4)
-            results_dict = {k: v for d in results for k, v in d.items()}
+            results = multiprocess_wrapper(run_solver, i, args["jobs"])
+            for d in results:
+                for k, v in d.items():
+                    results_dict[k] = v
             print("Saving results...")
 
             # Saving results
             with open(f"{timestamp}_results.pkl", "wb") as file:
-                pickle.dump(results, file)
+                pickle.dump(results_dict, file)
 
 
     # If you wish to do neighbourhood searching of previous results.
-    if args['neighbourhood'] == True:
+    if args['neighbourhood']:
 
         # Import prior results.
         infile = open(input('Input filename of results: '), 'rb')
@@ -183,7 +185,7 @@ if __name__ == '__main__':
         # Loop through results to identify hits.
         hits = {}
         for i in results_dict:
-            if results_dict[i]['Fourier'][0] and results_dict[i]['Fourier'][1]:
+            if not results_dict[i]['Fourier'][0] and not results_dict[i]['Fourier'][1]:
                 hits[i] = results_dict[i]
 
         for hit in hits:
@@ -237,14 +239,16 @@ if __name__ == '__main__':
             timestamp = timestamp.replace(':', '-')[:16]
             timestamp = timestamp.replace(' ', '_')
 
-            chunks = [items[x:x+10000] for x in range(0, len(items), 10000)]
+            chunks = [items[x:x+int(len(items)/10)] for x in range(0, len(items), int(len(items)/10))]
             results_dict = dict()
             for i in chunks:
                 print("Running solver...")
-                results = multiprocess_wrapper(run_solver, i, 4)
-                results_dict = {k: v for d in results for k, v in d.items()}
+                results = multiprocess_wrapper(run_solver, i, args["jobs"])
+                for d in results:
+                    for k, v in d.items():
+                        results_dict[k] = v
                 print("Saving results...")
 
                 # Saving results
                 with open(f"{timestamp}_results.pkl", "wb") as file:
-                    pickle.dump(results, file)
+                    pickle.dump(results_dict, file)
