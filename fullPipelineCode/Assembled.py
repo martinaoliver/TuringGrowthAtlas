@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
         chunks = [items[x:x+10000] for x in range(0, len(items), 10000)]
         results_dict = dict()
-        for count, i in chunks:
+        for i in chunks:
             print("Running solver...")
             results = multiprocess_wrapper(run_solver, i, 4)
             results_dict = {k: v for d in results for k, v in d.items()}
@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
             chunks = [items[x:x+10000] for x in range(0, len(items), 10000)]
             results_dict = dict()
-            for count, i in chunks:
+            for i in chunks:
                 print("Running solver...")
                 results = multiprocess_wrapper(run_solver, i, 4)
                 results_dict = {k: v for d in results for k, v in d.items()}

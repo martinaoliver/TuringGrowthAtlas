@@ -340,9 +340,9 @@ class Solver:  # Defines iterative solver methods
                 peaks = Solver.peaks_classify(concentrations)
                 if fourier and peaks:
                     print('Found one!')
-                t_grid = np.array([n*dt for n in range(num_timepoints+2)])
-                x_grid = np.array([n*dx for n in range(50)])
-                Solver.surfpattern(ccc, grids=[x_grid,t_grid])
+                # t_grid = np.array([n*dt for n in range(num_timepoints+2)])
+                # x_grid = np.array([n*dx for n in range(50)])
+                # Solver.surfpattern(ccc, grids=[x_grid,t_grid])
                 # Solver.plot_conc(concentrations)
                 fourier_list.append((fourier,peaks))
                 conc_list.append(concentrations)
