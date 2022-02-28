@@ -254,6 +254,7 @@ class Solver:  # Defines iterative solver methods
         if SteadyState_list:
             conc_list = []
             LSA_list = []
+            fourier_list = []
 
             for steady_conc in SteadyState_list:
 
@@ -297,15 +298,16 @@ class Solver:  # Defines iterative solver methods
 
                     concentrations = copy.deepcopy(concentrations_new)
 
-                if Solver.fourier_classify(concentrations):
-                    Solver.plot_conc(concentrations)
-                    # print("yes")
+                fourier = Solver.fourier_classify(concentrations)
+                if fourier:
+                    print('Found one!')
+                fourier_list.append(fourier)
                 conc_list.append(concentrations)
 
-            return conc_list, SteadyState_list, LSA_list
+            return conc_list, SteadyState_list, LSA_list, fourier_list
 
         else:
-            return [None], [None], [None]
+            return [None], [None], [None], [None]
 
     def plot_conc(U):
         plt.plot(U[0], label='U')
