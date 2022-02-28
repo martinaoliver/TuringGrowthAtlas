@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-np.random.seed(1)
-
 class LHS: # Defines parameter sampling
+
+    np.random.seed(1)
 
     def __init__(self, nsamples = 200, params = None):
         self.nsamples = nsamples
@@ -24,21 +24,20 @@ class LHS: # Defines parameter sampling
 
     # Function generates value from log distribution (0.001 to 1000).
     def loguniform(self,low=-3, high=3, size=None):
+        np.random.seed(1)
         return (10) ** (np.random.uniform(low, high, size))
 
     # Function generates non-overlapping samples from a distribution (latin hypercube sampling).
     # (data = distribution, nsample = number of desired samples)
 
     def lhs(self,data):
-         P = 100*(np.random.permutation(self.nsamples) + 1 - np.random.uniform(size=(self.nsamples)))/self.nsamples
-         s = np.percentile(data, P)
-         return s
+        np.random.seed(1)
+        P = 100*(np.random.permutation(self.nsamples) + 1 - np.random.uniform(size=(self.nsamples)))/self.nsamples
+        s = np.percentile(data, P)
+        return s
 
     # Function generates distribution range for each parameter and performs latin hypercube sampling.
     def sample_parameters(self):
-
-        # def loguniform(low=-3, high=3, size=None):
-        #     return (10) ** (np.random.uniform(low, high, size))
 
         param_sample_dict = {}
 
@@ -62,6 +61,41 @@ class LHS: # Defines parameter sampling
             elif len(self.params[p]) == 1: # If one number in parameter range it is constant.
 
                 param_sample_dict[p] = [self.params[p][0] for i in range(self.nsamples)]
+
+        # Convert dictionary of lists into dictionary of dictionaries
+        samples = {count: dict(zip(param_sample_dict, i)) for count, i in enumerate(zip(*param_sample_dict.values()))}
+
+        return samples
+    
+    
+class LHS_neighbourhood: # For neighbourhood sampling around a specified parameter set.
+
+    def __init__(self, nsamples = 200, params = None):
+        self.nsamples = nsamples
+        self.params = params
+
+    # Function generates non-overlapping samples from a distribution (latin hypercube sampling).
+    # data input is a distribution, which in this case will be a gaussian centered around the parameter value.
+
+    def lhs(self,data):
+         P = 100*(np.random.permutation(self.nsamples) + 1 - np.random.uniform(size=(self.nsamples)))/self.nsamples
+         s = np.percentile(data, P)
+         return s
+
+    # Function generates distribution range for each parameter and performs latin hypercube sampling.
+    def sample_parameters(self):
+
+        param_sample_dict = {}
+
+        for p in self.params:
+            
+            # Make gaussian distribution using the parameter value.
+            distribution = np.random.normal(self.params[p], self.params[p]/4)
+
+            # Perform lhs using the resulting distribution.
+            samples = self.lhs(distribution)
+
+            param_sample_dict[p] = samples.tolist()
 
         # Convert dictionary of lists into dictionary of dictionaries
         samples = {count: dict(zip(param_sample_dict, i)) for count, i in enumerate(zip(*param_sample_dict.values()))}
