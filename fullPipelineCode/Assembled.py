@@ -187,9 +187,7 @@ if __name__ == '__main__':
         # Loop through results to identify hits.
         hits = {}
         for i in results_dict:
-            print(results_dict[i]['Fourier'][0])
-            print(results_dict[i]['Fourier'][1])
-            if not results_dict[i]['Fourier'][0]:# and not results_dict[i]['Fourier'][1]:
+            if results_dict[i]['Fourier'][0] and results_dict[i]['Fourier'][1]:
                 hits[i] = results_dict[i]
 
         for hit in hits:

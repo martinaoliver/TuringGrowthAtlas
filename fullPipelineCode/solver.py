@@ -406,7 +406,7 @@ class Solver:  # Defines iterative solver methods
         peaks = [len(find_peaks(i)[0]) for i in U]
         multiple_peaks_found = False
         for i in peaks:
-            if i > 1:
+            if i > 2:
                 multiple_peaks_found = True
 
         return multiple_peaks_found
