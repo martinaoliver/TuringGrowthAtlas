@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+np.random.seed(1)
+
 class LHS: # Defines parameter sampling
 
     def __init__(self, nsamples = 200, params = None):

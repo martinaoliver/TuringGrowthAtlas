@@ -32,7 +32,7 @@ def multiprocess_wrapper(function, items, cpu):
     return results
 
 
-from solver_lsa import Solver
+from solver import Solver
 
 
 def run_solver(items):
@@ -65,7 +65,7 @@ def parse_args(inputs):
         system_length=50,
         total_time=1000,
         num_samples=100000,
-        growth="None",
+        growth=None,
         growth_rate=0.1,
         dx=0.3,
         jobs=4
@@ -129,6 +129,7 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
+    items = items[:2]
 
     print("Saving parameters...")
     with open("parameters.pkl", "wb") as file:
@@ -137,6 +138,9 @@ if __name__ == '__main__':
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
 
+    for i in items:
+        run_solver(i)
+    input()
     results = multiprocess_wrapper(run_solver, items, 4)
     results = {k: v for d in results for k, v in d.items()}
     print("Saving results...")
