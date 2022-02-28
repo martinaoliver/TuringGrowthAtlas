@@ -10,7 +10,10 @@ from scipy import optimize
 from sympy import *
 import matplotlib.pyplot as plt
 from scipy.fft import fft
+from scipy.signal import find_peaks
 import random
+from matplotlib import cm
+cmap = cm.Spectral
 
 np.random.seed(1)
 
@@ -158,15 +161,21 @@ class Solver:  # Defines iterative solver methods
     def exponential_growth(t, s=0.0001, initialL=1):
         return (initialL*np.exp(s*t))
 
-    def linear_growth(t,s=0.045, initialL=1):
+    def linear_growth(t,s=0.051, initialL=1):
         return initialL + t*s
 
     def growth_bounds(concs, boul_array, num_cells):
         cells_to_add = num_cells - np.count_nonzero(boul_array)
         concs = [np.multiply(conc_array,boul_array) for conc_array in concs]
-        full = np.where(boul_array == 1)
+        full = np.where(boul_array == 1)[0]
+        start = int(len(boul_array)/2)
+
         for cell in range(cells_to_add):
-            loc = np.random.choice([True,False])
+            if abs(full[-1]-start) >= abs(full[0]-start):
+                loc = False
+            else:
+                loc = True
+
             if np.all(boul_array==1):
                 break
             if boul_array[-1] == 1:
@@ -299,6 +308,7 @@ class Solver:  # Defines iterative solver methods
                 # bool_list.append(bool_array)
                 concentrations = [Solver.create(steady_conc[i], size=J, growth=growth, initial=bool_array) for i in range(2)]
                 newL = 1
+                ccc = [concentrations]
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
@@ -316,21 +326,27 @@ class Solver:  # Defines iterative solver methods
                         if newL < J:
                             newL = int(Solver.exponential_growth(hour))
                             concentrations_new = Solver.growth_bounds(concentrations_new, bool_array, newL)
-                            # bool_list.append(bool_array)
+
 
                     if growth == 'linear':
                         if newL < J:
                             newL = int(Solver.linear_growth(hour))
                             concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array, newL)
-                            # bool_list.append(bool_array)
 
                     concentrations = copy.deepcopy(concentrations_new)
+                    ccc.append(concentrations[0])
 
                 fourier = Solver.fourier_classify(concentrations)
-                if fourier:
+                peaks = Solver.peaks_classify(concentrations)
+                if fourier and peaks:
                     print('Found one!')
-                fourier_list.append(fourier)
+                t_grid = np.array([n*dt for n in range(num_timepoints+2)])
+                x_grid = np.array([n*dx for n in range(50)])
+                Solver.surfpattern(ccc, grids=[x_grid,t_grid])
+                # Solver.plot_conc(concentrations)
+                fourier_list.append((fourier,peaks))
                 conc_list.append(concentrations)
+
 
             return conc_list, SteadyState_list, LSA_list, fourier_list
 
@@ -355,6 +371,23 @@ class Solver:  # Defines iterative solver methods
         fig.tight_layout()
         plt.show()
 
+    def surfpattern(results,grids,morphogen = 0):
+        results = np.vstack(results)
+        results = np.transpose(results)
+        r_non_zero = results[results != 0]
+        levels = [0.]
+        for i in range(10):
+            levels.append(np.percentile(r_non_zero, 10*i, interpolation='midpoint'))
+        levels = list(dict.fromkeys(levels))
+        x_grid = grids[0]
+        t_grid = grids[1]
+        t,x = np.meshgrid(t_grid,x_grid)
+        plt.contourf(x,t,results, cmap=cmap,levels=levels)
+        plt.colorbar()
+        plt.xlabel('Time')
+        plt.ylabel('Space')
+        plt.show()
+
     def fourier_classify(U, threshold = 2, plot = False):
 
         # Compute the fourier transforms.
@@ -368,3 +401,12 @@ class Solver:  # Defines iterative solver methods
                     peaks_found = True
 
         return peaks_found
+
+    def peaks_classify(U):
+        peaks = [len(find_peaks(i)[0]) for i in U]
+        multiple_peaks_found = False
+        for i in peaks:
+            if i > 1:
+                multiple_peaks_found = True
+
+        return multiple_peaks_found

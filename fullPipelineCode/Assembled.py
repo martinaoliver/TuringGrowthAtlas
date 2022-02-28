@@ -65,13 +65,8 @@ def parse_args(inputs):
         num_diffusers=2,
         system_length=50,
         total_time=1000,
-<<<<<<< HEAD
         num_samples=100000,
         growth=None,
-=======
-        num_samples=1,
-        growth="None",
->>>>>>> a1277377fa42fbc6bc084f392a29e196b0da5841
         growth_rate=0.1,
         dx=0.3,
         jobs=4
@@ -86,9 +81,6 @@ def parse_args(inputs):
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
 
-
-    if args["growth"] == "None":
-        args["growth"] = None
 
     return args
 
@@ -135,25 +127,27 @@ if __name__ == '__main__':
     params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
     items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
-    items = items[:2]
+    chunks = [items[x:x+10000] for x in range(0, len(items), 10000)]
 
     print("Saving parameters...")
     timestamp = str(datetime.datetime.now())
     timestamp = timestamp.replace(':', '-')[:19]
     timestamp = timestamp.replace(' ', '_')
-    with open(f"{timestamp}_parameters.pkl", "wb") as file:
-        pickle.dump(params_and_arrays, file)
+    # with open(f"{timestamp}_parameters.pkl", "wb") as file:
+        # pickle.dump(params_and_arrays, file)
 
     ################### PART THREE: SOLVE ######################
-    print("Running solver...")
 
     for i in items:
         run_solver(i)
     input()
-    results = multiprocess_wrapper(run_solver, items, 4)
-    results = {k: v for d in results for k, v in d.items()}
-    print("Saving results...")
+    results_dict = dict()
+    for count, i in chunks:
+        print("Running solver...")
+        results = multiprocess_wrapper(run_solver, i, 4)
+        results_dict = {k: v for d in results for k, v in d.items()}
+        print("Saving results...")
 
-    # Saving results
-    with open(f"{timestamp}_results.pkl", "wb") as file:
-        pickle.dump(results, file)
+        # Saving results
+        with open(f"{timestamp}_results.pkl", "wb") as file:
+            pickle.dump(results, file)
