@@ -312,8 +312,7 @@ class Solver:  # Defines iterative solver methods
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
-                    full = np.where(concentrations_new[0]!=0)[0]
-                    concs_react = [conc[full] for conc in concentrations_new]
+                    concs_react = [conc[conc!=0] for conc in concentrations_new]
                     reactions = Solver.react(concs_react, params, **hill) * dt
                     reactions_padded = copy.deepcopy(concentrations_new)
                     for i in range(len(reactions_padded)):
