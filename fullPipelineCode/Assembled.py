@@ -69,7 +69,9 @@ def parse_args(inputs):
         growth=None,
         growth_rate=0.1,
         dx=0.3,
-        jobs=4
+        jobs=4,
+        neighbourhood=False,
+        upload_params=False
     )
 
     for a in inputs:
@@ -92,59 +94,149 @@ if __name__ == '__main__':
 
     print("Parsing inputs...")
     args = parse_args(sys.argv)
+    
+    # Not doing neighbourhood searching.
+    if args['neighbourhood'] == False:
 
-    ################### PART ONE: ATLAS ########################
-    print("Building atlas...")
-    from atlas import Atlas
+        ################### PART ONE: ATLAS ########################
+        print("Building atlas...")
+        from atlas import Atlas
+    
+        atlas = Atlas()
+        atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
+        atlas = {0:np.array([[1,1],[-1,0]])}
+    
+        ################### PART TWO: PARAMETERS ###################
+        
+        # Prepare grid space, rate, and time
+        args["J"] = args["system_length"]
+        args["num_timepoints"] = int(12. * args["total_time"])
+        args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
+        
+        # If a pre-existing parameter file is to be used then load it.
+        if args['upload_params'] == True:
+            
+            infile = open(input('Input filename of parameters: '), 'rb')
+            parameter_data = pickle.load(infile)
+            infile.close()
+            params_and_arrays = parameter_data
+        
+        # Otherwise generate parameters from scratch.
+        else:           
+            print("Sampling parameters...")
+            
+            from parameters import LHS    
+            nsamples = args['num_samples']
+            sampler = LHS(nsamples=args['num_samples'])
+            params = sampler.sample_parameters()
 
-    atlas = Atlas()
-    atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
-    atlas = {0:np.array([[1,1],[-1,0]])}
+            # Calculate alpha values for each species.
+            for p in params:
+                params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
+                params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
+        
+            # Join altas and params
+            indexes = product(params.keys(), atlas.keys())
+            combinations = product(params.values(), atlas.values())
+        
+            params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
+            
+            print("Saving parameters...")
+            with open("parameters.pkl", "wb") as file:
+                pickle.dump(params_and_arrays, file)
+    
+        items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
+        items = items[:2]
+    
+        ################### PART THREE: SOLVE ######################
+        print("Running solver...")
+        results = multiprocess_wrapper(run_solver, items, 4)
+        results = {k: v for d in results for k, v in d.items()}
+        print("Saving results...")
+    
+        # Saving results
+        timestamp = str(datetime.datetime.now())
+        timestamp = timestamp.replace(':', '-')[:19]
+        timestamp = timestamp.replace(' ', '_')
+        with open(f"{timestamp}_results.pkl", "wb") as file:
+            pickle.dump(results, file)
+    
+    
+    # If you wish to do neighbourhood searching of previous results.
+    if args['neighbourhood'] == True:
+        
+        # Import prior results.
+        infile = open(input('Input filename of results: '), 'rb')
+        results_dict = pickle.load(infile)
+        infile.close()
+        
+        # Import parameters.
+        infile = open(input('Input filename of parameters: '), 'rb')
+        parameter_data = pickle.load(infile)
+        infile.close()
+        
+        # Loop through results to identify hits.
+        hits = {}
+        for i in results_dict:
+            if results_dict[i]['Fourier'] == False:
+                hits[i] = results_dict[i]
+                
+        for hit in hits:
 
-    ################### PART TWO: PARAMETERS ###################
-    print("Sampling parameters...")
-    from parameters import LHS
-
-    nsamples = args['num_samples']
-    sampler = LHS(nsamples=args['num_samples'])
-    params = sampler.sample_parameters()
-
-    # Prepare grid space, rate, and time
-    args["J"] = args["system_length"]
-    args["num_timepoints"] = int(12. * args["total_time"])
-    args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
-
-    # Calculate alpha values for each species.
-    for p in params:
-        params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
-        params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
-
-    # Join altas and params
-    indexes = product(params.keys(), atlas.keys())
-    combinations = product(params.values(), atlas.values())
-
-    params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
-
-    items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
-    items = items[:2]
-
-    print("Saving parameters...")
-    with open("parameters.pkl", "wb") as file:
-        pickle.dump(params_and_arrays, file)
-
-    ################### PART THREE: SOLVE ######################
-    print("Running solver...")
-
-    for i in items:
-        run_solver(i)
-    input()
-    results = multiprocess_wrapper(run_solver, items, 4)
-    results = {k: v for d in results for k, v in d.items()}
-    print("Saving results...")
-
-    # Saving results
-    timestamp = str(datetime.datetime.now())
-    timestamp = timestamp.replace(':', '-')[:19]
-    timestamp = timestamp.replace(' ', '_')
-    with open(f"{timestamp}_results.pkl", "wb") as file:
-        pickle.dump(results, file)
+            ################### PART ONE: ATLAS ########################
+            print("Extracting topology...")
+            atlas = {0:(parameter_data[(hit[0],0)][1])}
+        
+            ################### PART TWO: PARAMETERS ###################
+            print("Sampling parameters...")
+            from parameters import LHS_neighbourhood
+        
+            nsamples = args['num_samples']
+            
+            hit_params = parameter_data[(hit[0],0)][0]
+            hit_params.pop('alphan_x')
+            hit_params.pop('alphan_y')
+            
+            sampler = LHS_neighbourhood(nsamples=args['num_samples'], params = hit_params)
+            params = sampler.sample_parameters()
+        
+            # Prepare grid space, rate, and time
+            args["J"] = args["system_length"]
+            args["num_timepoints"] = int(12. * args["total_time"])
+            args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
+        
+            # Calculate alpha values for each species.
+            for p in params:
+                params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
+                params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
+        
+            # Join altas and params
+            indexes = product(params.keys(), atlas.keys())
+            combinations = product(params.values(), atlas.values())
+        
+            params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
+        
+            items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
+        
+            print("Saving parameters...")
+            with open("neighbourhood_parameters.pkl", "wb") as file:
+                pickle.dump(params_and_arrays, file)
+        
+            ################### PART THREE: SOLVE ######################
+            
+            confirm = input('Have you made a folder called Results in the working directory? (y/n) ')
+            while confirm != 'y':
+                confirm = input('Make one and type y when you have.')
+                
+            print("Running solver...")        
+            results = multiprocess_wrapper(run_solver, items, 4)
+            results = {k: v for d in results for k, v in d.items()}
+            print("Saving results...")
+        
+            # Saving results
+            timestamp = str(datetime.datetime.now())
+            timestamp = timestamp.replace(':', '-')[:19]
+            timestamp = timestamp.replace(' ', '_')
+            with open(f"Results/{hit}_results_{timestamp}.pkl", "wb") as file:
+                pickle.dump(results, file)
+       
