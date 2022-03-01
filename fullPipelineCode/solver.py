@@ -394,11 +394,21 @@ class Solver:  # Defines iterative solver methods
         transforms = [fft(i) for i in U]
 
         # Check for peaks.
+        x_peaks = [abs(i) > threshold for i in transforms[0][1:]]
+        y_peaks = [abs(i) > threshold for i in transforms[1][1:]]
+
+        # Peaks must be found in both species to return True.
         peaks_found = False
-        for i in transforms:
-            for ii in i[1:]:
-                if abs(ii) > threshold:
-                    peaks_found = True
+        if sum(x_peaks) > 0 and sum(y_peaks) > 0:
+            peaks_found = True
+            
+        # Plot the fourier transforms.
+        if plot:
+             for i in [0,1]:
+                 freq = fftfreq(50,0.3)
+                 plt.plot(freq, abs(transforms[i]))
+                 plt.xlim(0,)
+                 plt.show()
 
         return peaks_found
 
