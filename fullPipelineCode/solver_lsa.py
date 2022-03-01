@@ -157,16 +157,7 @@ class Solver:  # Defines iterative solver methods
         return np.random.uniform(low=low, high=high, size=size)
 
     def grow(array):
-        # Grow grid
-        # Add row
         array = np.concatenate((array, [array[-1]]))
-
-        # if len(array.shape) == 2:
-        #     # 2D growth
-        #     end_column = np.array([array[:, -1]]).T
-        #     # Add column
-        #     array = np.concatenate((array, end_column), axis=1)
-
         return array
 
     def hill_equations(interaction, rate):
@@ -222,45 +213,6 @@ class Solver:  # Defines iterative solver methods
         return eigenvalues
 
 
-
-    # Independent LSA solver
-    def LSA(params, topology, **args):
-
-        # Define hill equations
-        hill = dict(
-            hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
-            hillyx=Solver.hill_equations(topology[0, 1], params['k_yx']),
-            hillxy=Solver.hill_equations(topology[1, 0], params['k_xy']),
-            hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
-        )
-
-        initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
-        SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
-
-
-        if SteadyState_list:
-            LSA_list = []
-
-            for steady_conc in SteadyState_list:
-
-                # LSA check
-                turing = None # 0 for no typical turing, 1 for typical turing
-                K = None
-                eigen_v = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
-                eigen_v_min = eigen_v[:,1] # take the maximum eigenvalue, second column
-                eigen_min_r = eigen_v_min.real # take the real part
-                if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0: # check head and tail
-                    if np.max(eigen_min_r) > 0: # check the middle
-                        turing = 1
-                        K = np.argmax(eigen_min_r) * np.pi / 100 # find the wavenumber of maximum eigenvalue
-                LSA_list.append([turing,K])
-
-        return LSA_list
-
-
-
-
-
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         # Calculate A and B matrices for each species.
@@ -293,9 +245,8 @@ class Solver:  # Defines iterative solver methods
 
         # Begin solving.
         if SteadyState_list:
-            conc_list = []
+
             LSA_list = []
-            fourier_list = []
 
             for steady_conc in SteadyState_list:
 
@@ -308,83 +259,5 @@ class Solver:  # Defines iterative solver methods
 
                 LSA_list.append(LSA)
 
+            return LSA_list
 
-                # Crank Nicolson solver
-                A_matrix = A_matrices[0]
-                B_matrix = B_matrices[0]
-
-                if growth == None:
-                    currentJ = J
-                elif growth == 'linear':
-                    currentJ = 1
-
-                concentrations = [Solver.create(steady_conc[i], size=currentJ) for i in range(2)]
-
-                for ti in range(num_timepoints):
-                    concentrations_new = copy.deepcopy(concentrations)
-
-                    reactions = Solver.react(concentrations, params, **hill) * dt
-                    concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n]))
-                                          for n in range(2)]
-
-                    hour = ti / (num_timepoints / total_time)
-
-                    if growth == "linear" and hour % 1 == 0:
-                        concentrations_new = [Solver.grow(c) for c in concentrations_new]
-                        A_matrix = A_matrices[currentJ]
-                        B_matrix = B_matrices[currentJ]
-                        currentJ += 1
-
-                    concentrations = copy.deepcopy(concentrations_new)
-                    
-                fourier = Solver.fourier_classify(concentrations)
-                if fourier:
-                    print('Found one!')
-                    Solver.plot_conc(concentrations)
-                fourier_list.append(fourier)
-                    
-                conc_list.append(concentrations)
-
-            return conc_list, SteadyState_list, LSA_list, fourier_list
-
-
-    def plot_conc(U):
-
-        fig, ax1 = plt.subplots()
-        color = 'tab:green'
-        ax1.set_xlabel('Space')
-        ax1.set_ylabel('Concentration x', color=color)
-        ax1.plot(U[0], color=color)
-        ax1.tick_params(axis='y')
-
-        ax2 = ax1.twinx()
-        color = 'tab:blue'
-        ax2.set_ylabel('Concentration y', color=color)
-        ax2.plot(U[1], color=color)
-        ax2.tick_params(axis='y')
-
-        fig.tight_layout()
-        plt.show()
-
-    def fourier_classify(U, threshold = 2, plot = False):
-
-        # Compute the fourier transforms.
-        transforms = [fft(i) for i in U]
-
-        # Check for peaks.
-        peaks_found = False
-
-        for i in transforms:
-            for ii in i[1:]:
-                if abs(ii) > threshold:
-                    peaks_found = True
-
-        # Plot the fourier transforms.
-        # if plot:
-        #     for i in [0,1]:
-        #         freq = fftfreq(L,dx)
-        #         plt.plot(freq, abs(transforms[i]))
-        #         plt.xlim(0,)
-        #         plt.show()
-
-        return peaks_found
