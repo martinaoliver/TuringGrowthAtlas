@@ -1,6 +1,5 @@
 # Author Xindong
 # Date 2022/3/1 13:24
-
 from tqdm import tqdm
 import sys
 import multiprocessing as mp
@@ -35,7 +34,7 @@ def multiprocess_wrapper(function, items, cpu):
     return results
 
 
-from solver_lsa import Solver
+from solverV5 import Solver
 
 
 def run_solver(items):
@@ -103,10 +102,10 @@ if __name__ == '__main__':
     ################### PART THREE: SOLVE ######################
     print("Running solver...")
 
-    results = multiprocess_wrapper(run_solver, items, 4)
+    results = multiprocess_wrapper(run_solver, items, 6)
     results = {k: v for d in results for k, v in d.items()}
     print("Saving results...")
 
-    # # Saving results
-    # with open("1t_results.pkl", "wb") as file:
-    #     pickle.dump(results, file)
+    # Saving results
+    with open("LSA_Results.pkl", "wb") as file:
+        pickle.dump(results, file)
