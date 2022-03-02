@@ -91,7 +91,6 @@ class NewtonRaphson:
 
         return SteadyState_list
 
-
 class LSA:
 
     # Define LSA check functions
@@ -217,49 +216,8 @@ class LSA:
 
 
 
-    # # Independent LSA solver
-    # def LSA(params, topology, hill, steady_conc):
-    #     # LSA check
-    #     turing = None  # 0 for no typical turing, 1 for typical turing
-    #     K = None
-    #     eigen_v = LSA.calculate_dispersion(params, hill, steady_conc)  # calculate the eigenvalue
-    #     eigen_v_min = eigen_v[:, 1]  # take the maximum eigenvalue, second column
-    #     eigen_min_r = eigen_v_min.real  # take the real part
-    #     if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0:  # check head and tail
-    #         if np.max(eigen_min_r) > 0:  # check the middle
-    #             turing = 1
-    #             K = np.argmax(eigen_min_r) * np.pi / 100  # find the wavenumber of maximum eigenvalue
-    #
-    #     return [turing, K]
+    def LSA(params, topology, hill, steady_conc):
 
-    def detailed_LSA(params, topology, hill, steady_conc):
-
-        # # for independent LSA
-        # hill = dict(
-        #     hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
-        #     hillyx=Solver.hill_equations(topology[0, 1], params['k_yx']),
-        #     hillxy=Solver.hill_equations(topology[1, 0], params['k_xy']),
-        #     hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
-        # )
-        # ss_conc = steady_conc.tolist()
-        #
-        # LSA_list = []
-        #
-        # eigenvalues = LSA.calculate_dispersion(params, hill, ss_conc)
-        # ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
-        # system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
-        #                                                stability_ss)  # LSA diffusion (curve analysis)
-        # LSA = {
-        #     "steadystate_stability": stability_ss,
-        #     "steadystate_class": ss_class,
-        #     "system_class": system_class,
-        #     "max_eigenvalue": maxeig}
-        #
-        # LSA_list.append(LSA)
-        #
-        # return LSA_list
-
-        # for subsequent LSA
         eigenvalues = LSA.calculate_dispersion(params, hill, steady_conc)
         ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
         system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
@@ -433,7 +391,7 @@ class Solver:  # Defines iterative solver methods
             for steady_conc in SteadyState_list:
 
                 if not growth:
-                    LSA_list.append(LSA.detailed_LSA(params, topology, hill, steady_conc))
+                    LSA_list.append(LSA.LSA(params, topology, hill, steady_conc))
                 else:
                     LSA_list.append(None)
                 # bool_list = list()
