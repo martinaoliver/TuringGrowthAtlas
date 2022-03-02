@@ -13,9 +13,11 @@ from scipy.fft import fft
 from scipy.signal import find_peaks
 import random
 from matplotlib import cm
+
 cmap = cm.Spectral
 
 np.random.seed(1)
+
 
 class NewtonRaphson:
     # Defines Newton Raphson methods for finding steadystates
@@ -38,7 +40,6 @@ class NewtonRaphson:
 
         # perform the Newton-Raphson iteration
         while err > tolerance and iter < max_num_iter and np.all(x != 0):
-
             jac_temp = jac.subs(X, x[0])
             jac_temp = jac_temp.subs(Y, x[1])
             jac_temp = np.array(jac_temp, dtype=float)
@@ -84,11 +85,192 @@ class NewtonRaphson:
                         logiclist = []
                         for state in SteadyState_list:
                             logiclist.append(
-                                np.allclose(state, xs, rtol=10 ** -2,atol=0))  # PROCEED IF NO TRUES FOUND
+                                np.allclose(state, xs, rtol=10 ** -2, atol=0))  # PROCEED IF NO TRUES FOUND
                         if not True in logiclist:  # no similar steady states previously found
                             SteadyState_list.append(xs)
 
         return SteadyState_list
+
+
+class LSA:
+
+    # Define LSA check functions
+    def diffusion_jacobian(params, hill, steady_state):
+        # Generate diffusion Jacobian matrix with steady state
+        X, Y = symbols('X'), symbols('Y')
+        functions = Matrix(Solver.react([X, Y], params, **hill))
+        jac = functions.jacobian([X, Y])
+        # Substitute X, Y with steady state value
+        Xs, Ys = steady_state
+        jac_diff = jac.subs(X, Xs)
+        jac_diff = jac_diff.subs(Y, Ys)
+        jac_diff = np.array(jac_diff, dtype=float)
+
+        return jac_diff
+
+    def calculate_dispersion(params, hill, steady_state, top_dispersion=5000, n_species=2):
+        jac_diff = LSA.diffusion_jacobian(params, hill, steady_state)
+        wvn_list = np.array(list(range(0, top_dispersion + 1))) * np.pi / 100
+        count = 0
+        eigenvalues = np.zeros((len(wvn_list), n_species), dtype=np.complex)
+        Diff_matrix = np.array([[params['diffusion_x'], 0], [0, params['diffusion_y']]])
+
+        for wvn in wvn_list:
+            jac_temp = jac_diff - Diff_matrix * wvn ** 2  # calculate the diffusion jacobian matrix
+            eigenval, eigenvec = np.linalg.eig(jac_temp)  # solve the eigenvalue
+            eigenvalues[count] = np.sort(eigenval)  # sort eigenvalues
+            count += 1
+
+        return eigenvalues
+
+
+    def stability_no_diffusion(eigenvalues):
+
+        eigenvalues_ss = eigenvalues[0, -1]
+
+        # oscillations in ss
+        if np.iscomplex(eigenvalues_ss):
+            complex_ss = True
+        else:
+            complex_ss = False
+
+        # stability in  ss
+        if eigenvalues_ss > 0:
+            stability_ss = 'unstable'
+        elif eigenvalues_ss == 0:
+            stability_ss = 'lyapunov stable'
+        elif eigenvalues_ss < 0:
+            stability_ss = 'stable'
+
+        # classification of ss
+        if complex_ss == False:
+            if stability_ss == 'stable':
+                ss_class = 'stable point'
+            elif stability_ss == 'lyapunov stable':
+                ss_class = 'neutral point'
+            elif stability_ss == 'unstable':
+                ss_class = 'unstable point'
+        if complex_ss == True:
+            if stability_ss == 'stable':
+                ss_class = 'stable spiral'
+            elif stability_ss == 'lyapunov stable':
+                ss_class = 'neutral center'
+            elif stability_ss == 'unstable':
+                ss_class = 'unstable spiral'
+
+        return ss_class, complex_ss, stability_ss
+
+    # Curve check
+    def stability_diffusion(eigenvalues, complex_ss, stability_ss):
+        maxeig = np.amax(eigenvalues)  # highest eigenvalue of all wvn's and all the 6 eigenvalues.
+        maxeig_real = maxeig.real  # real part of maxeig
+
+        if stability_ss == 'stable' or stability_ss == 'neutral':  # turing I, turing I oscillatory, turing II, Unstable
+            if maxeig_real <= 0:
+                system_class = 'simple stable'
+            elif maxeig_real > 0:  # turing I, turing I oscillatory, turing II
+                if np.any(eigenvalues[-1, :] == maxeig):
+                    system_class = 'turing II'
+                elif np.all(
+                        eigenvalues[-1, :] != maxeig):  # highest instability does not appear with highest wavenumber)
+                    if np.any(eigenvalues.imag[:,
+                              -1] > 0):  # if the highest eigenvalue contains imaginary numbers oscillations might be found
+                        system_class = 'turing I oscillatory'
+                    elif np.all(eigenvalues.imag[:,
+                                -1] <= 0):  # if the highest eigenvalue does not contain imaginary numbers
+                        system_class = 'turing I'
+                    else:
+                        system_class = 'unclassified'
+                else:
+                    system_class = 'unclassified'
+            else:
+                system_class = 'unclassified'
+
+        elif stability_ss == 'unstable':  # fully unstable or hopf
+            if complex_ss == False:
+                system_class = 'simple unstable'
+
+            elif complex_ss == True and eigenvalues.imag[-1, -1] == 0:  # hopf
+                # sign changes
+                real_dominant_eig = eigenvalues.real[:, -1]
+                sign_changes = len(
+                    list(itertools.groupby(real_dominant_eig, lambda real_dominant_eig: real_dominant_eig > 0))) - 1
+                if sign_changes == 1:
+                    system_class = 'hopf'
+
+                elif sign_changes > 1:
+                    if np.any(eigenvalues[-1, -1] == maxeig_real):
+                        system_class = 'turing II hopf'
+                    elif np.all(eigenvalues[
+                                    -1, -1] != maxeig_real):  # highest instability does not appear with highest wavenumber)
+                        system_class = 'turing I hopf'
+                    else:
+                        system_class = 'unclassified'
+                else:
+                    system_class = 'unclassified'
+            else:
+                system_class = 'unclassified'
+        else:
+            system_class = 'unclassified'
+
+        return system_class, maxeig
+
+
+
+    # # Independent LSA solver
+    # def LSA(params, topology, hill, steady_conc):
+    #     # LSA check
+    #     turing = None  # 0 for no typical turing, 1 for typical turing
+    #     K = None
+    #     eigen_v = LSA.calculate_dispersion(params, hill, steady_conc)  # calculate the eigenvalue
+    #     eigen_v_min = eigen_v[:, 1]  # take the maximum eigenvalue, second column
+    #     eigen_min_r = eigen_v_min.real  # take the real part
+    #     if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0:  # check head and tail
+    #         if np.max(eigen_min_r) > 0:  # check the middle
+    #             turing = 1
+    #             K = np.argmax(eigen_min_r) * np.pi / 100  # find the wavenumber of maximum eigenvalue
+    #
+    #     return [turing, K]
+
+    def detailed_LSA(params, topology, hill, steady_conc):
+
+        # # for independent LSA
+        # hill = dict(
+        #     hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
+        #     hillyx=Solver.hill_equations(topology[0, 1], params['k_yx']),
+        #     hillxy=Solver.hill_equations(topology[1, 0], params['k_xy']),
+        #     hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
+        # )
+        # ss_conc = steady_conc.tolist()
+        #
+        # LSA_list = []
+        #
+        # eigenvalues = LSA.calculate_dispersion(params, hill, ss_conc)
+        # ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
+        # system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
+        #                                                stability_ss)  # LSA diffusion (curve analysis)
+        # LSA = {
+        #     "steadystate_stability": stability_ss,
+        #     "steadystate_class": ss_class,
+        #     "system_class": system_class,
+        #     "max_eigenvalue": maxeig}
+        #
+        # LSA_list.append(LSA)
+        #
+        # return LSA_list
+
+        # for subsequent LSA
+        eigenvalues = LSA.calculate_dispersion(params, hill, steady_conc)
+        ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
+        system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
+                                                       stability_ss)  # LSA diffusion (curve analysis)
+        LSA_analysis = {
+            "steadystate_stability": stability_ss,
+            "steadystate_class": ss_class,
+            "system_class": system_class,
+            "max_eigenvalue": maxeig}
+
+        return LSA_analysis
 
 
 class Solver:  # Defines iterative solver methods
@@ -146,7 +328,7 @@ class Solver:  # Defines iterative solver methods
         initial_conditions = Solver.lhs_list(data, n_initialconditions)
         return np.array(initial_conditions, dtype=np.float)
 
-    def create(steadystate, size, growth, initial, perturbation=0.001,):
+    def create(steadystate, size, growth, initial, perturbation=0.001, ):
         # define the initial value from steady state
         low = steadystate - perturbation
         high = steadystate + perturbation
@@ -154,49 +336,48 @@ class Solver:  # Defines iterative solver methods
         if not growth:
             return conc
         if growth:
-            conc = np.multiply(conc,initial)
+            conc = np.multiply(conc, initial)
             return conc
 
-
     def exponential_growth(t, s=0.0001, initialL=1):
-        return (initialL*np.exp(s*t))
+        return (initialL * np.exp(s * t))
 
-    def linear_growth(t,s=0.051, initialL=1):
-        return initialL + t*s
+    def linear_growth(t, s=0.051, initialL=1):
+        return initialL + t * s
 
     def growth_bounds(concs, boul_array, num_cells):
         cells_to_add = num_cells - np.count_nonzero(boul_array)
-        concs = [np.multiply(conc_array,boul_array) for conc_array in concs]
+        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
         full = np.where(boul_array == 1)[0]
-        start = int(len(boul_array)/2)
+        start = int(len(boul_array) / 2)
 
         for cell in range(cells_to_add):
-            if abs(full[-1]-start) >= abs(full[0]-start):
+            if abs(full[-1] - start) >= abs(full[0] - start):
                 loc = False
             else:
                 loc = True
 
-            if np.all(boul_array==1):
+            if np.all(boul_array == 1):
                 break
             if boul_array[-1] == 1:
-                boul_array[full[0]-1] = 1
+                boul_array[full[0] - 1] = 1
                 for conc_array in concs:
-                    conc_array[full[0]-1] = conc_array[full[0]]
+                    conc_array[full[0] - 1] = conc_array[full[0]]
 
             elif boul_array[0] == 1:
-                boul_array[full[-1]+1] = 1
+                boul_array[full[-1] + 1] = 1
                 for conc_array in concs:
-                    conc_array[full[-1]+1] = conc_array[full[-1]]
+                    conc_array[full[-1] + 1] = conc_array[full[-1]]
 
             elif loc:
-                boul_array[full[-1]+1] = 1
+                boul_array[full[-1] + 1] = 1
                 for conc_array in concs:
-                    conc_array[full[-1]+1] = conc_array[full[-1]]
+                    conc_array[full[-1] + 1] = conc_array[full[-1]]
 
             else:
-                boul_array[full[0]-1] = 1
+                boul_array[full[0] - 1] = 1
                 for conc_array in concs:
-                    conc_array[full[0]-1] = conc_array[full[0]]
+                    conc_array[full[0] - 1] = conc_array[full[0]]
 
         return concs, boul_array
 
@@ -223,50 +404,6 @@ class Solver:  # Defines iterative solver methods
 
         return np.array([fx, fy])
 
-    # Define LSA check functions
-    def diffusion_jacobian(params, hill, steady_state):
-        # Generate diffusion Jacobian matrix with steady state
-        X, Y = symbols('X'), symbols('Y')
-        functions = Matrix(Solver.react([X, Y], params, **hill))
-        jac = functions.jacobian([X, Y])
-        # Substitute X, Y with steady state value
-        Xs, Ys = steady_state
-        jac_diff = jac.subs(X, Xs)
-        jac_diff = jac_diff.subs(Y, Ys)
-        jac_diff = np.array(jac_diff, dtype=float)
-
-        return jac_diff
-
-    def calculate_dispersion(params, hill, steady_state, top_dispersion=5000, n_species=2):
-        jac_diff = Solver.diffusion_jacobian(params, hill, steady_state)
-        wvn_list = np.array(list(range(0, top_dispersion + 1))) * np.pi / 100
-        count = 0
-        eigenvalues = np.zeros((len(wvn_list), n_species), dtype=np.complex)
-        Diff_matrix = np.array([[params['diffusion_x'], 0], [0, params['diffusion_y']]])
-
-        for wvn in wvn_list:
-            jac_temp = jac_diff - Diff_matrix * wvn**2 # calculate the diffusion jacobian matrix
-            eigenval, eigenvec = np.linalg.eig(jac_temp) # solve the eigenvalue
-            eigenvalues[count] = np.sort(eigenval) # sort eigenvalues
-            count += 1
-
-        return eigenvalues
-
-    # Independent LSA solver
-    def LSA(params, topology, hill, steady_conc):
-        # LSA check
-        turing = None # 0 for no typical turing, 1 for typical turing
-        K = None
-        eigen_v = Solver.calculate_dispersion(params, hill, steady_conc) # calculate the eigenvalue
-        eigen_v_min = eigen_v[:,1] # take the maximum eigenvalue, second column
-        eigen_min_r = eigen_v_min.real # take the real part
-        if eigen_min_r[0] < 0 and eigen_min_r[-1] < 0: # check head and tail
-            if np.max(eigen_min_r) > 0: # check the middle
-                turing = 1
-                K = np.argmax(eigen_min_r) * np.pi / 100 # find the wavenumber of maximum eigenvalue
-
-        return [turing,K]
-
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
 
         # Calculate A and B matrices for each species.
@@ -275,16 +412,15 @@ class Solver:  # Defines iterative solver methods
 
         # Define hill equations
         hill = dict(
-            hillxx = Solver.hill_equations(topology[0, 0], params['k_xx']),
-            hillyx = Solver.hill_equations(topology[0, 1], params['k_yx']),
-            hillxy = Solver.hill_equations(topology[1, 0], params['k_xy']),
-            hillyy = Solver.hill_equations(topology[1, 1], params['k_yy'])
+            hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
+            hillyx=Solver.hill_equations(topology[0, 1], params['k_yx']),
+            hillxy=Solver.hill_equations(topology[1, 0], params['k_xy']),
+            hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
         )
 
         # Find the steady state
         initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
         SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
-
 
         # Set up starting conditions.
 
@@ -297,36 +433,37 @@ class Solver:  # Defines iterative solver methods
             for steady_conc in SteadyState_list:
 
                 if not growth:
-                    LSA_list.append(Solver.LSA(params, topology, hill, steady_conc))
+                    LSA_list.append(LSA.detailed_LSA(params, topology, hill, steady_conc))
                 else:
                     LSA_list.append(None)
                 # bool_list = list()
                 # Crank Nicolson solver
                 # bool array used only for growth
                 bool_array = np.zeros(J)
-                bool_array[int(J/2)] = 1
+                bool_array[int(J / 2)] = 1
                 # bool_list.append(bool_array)
-                concentrations = [Solver.create(steady_conc[i], size=J, growth=growth, initial=bool_array) for i in range(2)]
+                concentrations = [Solver.create(steady_conc[i], size=J, growth=growth, initial=bool_array) for i in
+                                  range(2)]
                 newL = 1
                 ccc = [concentrations]
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
-                    full = np.where(concentrations_new[0]!=0)[0]
-                    concs_react = [conc[conc!=0] for conc in concentrations_new]
+                    full = np.where(concentrations_new[0] != 0)[0]
+                    concs_react = [conc[conc != 0] for conc in concentrations_new]
                     reactions = Solver.react(concs_react, params, **hill) * dt
                     reactions_padded = copy.deepcopy(concentrations_new)
                     for i in range(len(reactions_padded)):
                         reactions_padded[i][full] = reactions[i]
-                    concentrations_new = [np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
-                                          for n in range(2)]
+                    concentrations_new = [
+                        np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
+                        for n in range(2)]
 
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
                         if newL < J:
                             newL = int(Solver.exponential_growth(hour))
                             concentrations_new = Solver.growth_bounds(concentrations_new, bool_array, newL)
-
 
                     if growth == 'linear':
                         if newL < J:
@@ -344,51 +481,50 @@ class Solver:  # Defines iterative solver methods
                 # x_grid = np.array([n*dx for n in range(50)])
                 # Solver.surfpattern(ccc, grids=[x_grid,t_grid])
                 # Solver.plot_conc(concentrations)
-                fourier_list.append((fourier,peaks))
+                fourier_list.append((fourier, peaks))
                 conc_list.append(concentrations)
-
 
             return conc_list, SteadyState_list, LSA_list, fourier_list
 
         else:
-            return [None], [None], [None], [None]
+            return [None], [None], [None], [None, None]
 
     def plot_conc(U):
 
         fig, ax1 = plt.subplots()
         color = 'tab:green'
         ax1.set_xlabel('Space')
-        ax1.set_ylabel('Concentration x', color = color)
-        ax1.plot(U[0], color = color)
-        ax1.tick_params(axis = 'y')
+        ax1.set_ylabel('Concentration x', color=color)
+        ax1.plot(U[0], color=color)
+        ax1.tick_params(axis='y')
 
         ax2 = ax1.twinx()
         color = 'tab:blue'
-        ax2.set_ylabel('Concentration y', color = color)
-        ax2.plot(U[1], color = color)
+        ax2.set_ylabel('Concentration y', color=color)
+        ax2.plot(U[1], color=color)
         ax2.tick_params(axis='y')
 
         fig.tight_layout()
         plt.show()
 
-    def surfpattern(results,grids,morphogen = 0):
+    def surfpattern(results, grids, morphogen=0):
         results = np.vstack(results)
         results = np.transpose(results)
         r_non_zero = results[results != 0]
         levels = [0.]
         for i in range(10):
-            levels.append(np.percentile(r_non_zero, 10*i, interpolation='midpoint'))
+            levels.append(np.percentile(r_non_zero, 10 * i, interpolation='midpoint'))
         levels = list(dict.fromkeys(levels))
         x_grid = grids[0]
         t_grid = grids[1]
-        t,x = np.meshgrid(t_grid,x_grid)
-        plt.contourf(x,t,results, cmap=cmap,levels=levels)
+        t, x = np.meshgrid(t_grid, x_grid)
+        plt.contourf(x, t, results, cmap=cmap, levels=levels)
         plt.colorbar()
         plt.xlabel('Time')
         plt.ylabel('Space')
         plt.show()
 
-    def fourier_classify(U, threshold = 2, plot = False):
+    def fourier_classify(U, threshold=2, plot=False):
 
         # Compute the fourier transforms.
         transforms = [fft(i) for i in U]
@@ -401,14 +537,14 @@ class Solver:  # Defines iterative solver methods
         peaks_found = False
         if sum(x_peaks) > 0 and sum(y_peaks) > 0:
             peaks_found = True
-            
+
         # Plot the fourier transforms.
         if plot:
-             for i in [0,1]:
-                 freq = fftfreq(50,0.3)
-                 plt.plot(freq, abs(transforms[i]))
-                 plt.xlim(0,)
-                 plt.show()
+            for i in [0, 1]:
+                freq = fftfreq(50, 0.3)
+                plt.plot(freq, abs(transforms[i]))
+                plt.xlim(0, )
+                plt.show()
 
         return peaks_found
 
