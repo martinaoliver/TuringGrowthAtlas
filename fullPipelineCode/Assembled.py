@@ -64,11 +64,11 @@ def parse_args(inputs):
         num_nodes=2,
         num_diffusers=2,
         system_length=50,
-        total_time=1000,
+        total_time=1500,
         num_samples=100000,
         growth=None,
         growth_rate=0.1,
-        dx=0.3,
+        dx=0.6,
         jobs=4,
         neighbourhood=False,
         upload_params=False,
@@ -166,7 +166,7 @@ if __name__ == '__main__':
                     results_dict[k] = v
             print("Saving results...")
 
-            # Saving results
+            Saving results
             with open(f"{args['growth']}_results.pkl", "wb") as file:
                 pickle.dump(results_dict, file)
 

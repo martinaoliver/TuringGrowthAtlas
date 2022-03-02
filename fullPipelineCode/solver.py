@@ -286,8 +286,9 @@ class Solver:  # Defines iterative solver methods
         initial_conditions = Solver.lhs_list(data, n_initialconditions)
         return np.array(initial_conditions, dtype=np.float)
 
-    def create(steadystate, size, growth, initial, perturbation=0.001, ):
+    def create(steadystate, size, growth, initial, perturbation=0.001):
         # define the initial value from steady state
+        perturbation = perturbation*steadystate
         low = steadystate - perturbation
         high = steadystate + perturbation
         conc = np.random.uniform(low=low, high=high, size=size)
@@ -297,45 +298,21 @@ class Solver:  # Defines iterative solver methods
             conc = np.multiply(conc, initial)
             return conc
 
-    def exponential_growth(t, s=0.0001, initialL=1):
+    def exponential_growth(t, s=0.0001, initialL=2):
         return (initialL * np.exp(s * t))
 
-    def linear_growth(t, s=0.051, initialL=1):
+    def linear_growth(t, s=0.03335, initialL=2):
         return initialL + t * s
 
-    def growth_bounds(concs, boul_array, num_cells):
-        cells_to_add = num_cells - np.count_nonzero(boul_array)
+    def growth_bounds(concs, boul_array):
+
         concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
         full = np.where(boul_array == 1)[0]
-        start = int(len(boul_array) / 2)
-
-        for cell in range(cells_to_add):
-            if abs(full[-1] - start) >= abs(full[0] - start):
-                loc = False
-            else:
-                loc = True
-
-            if np.all(boul_array == 1):
-                break
-            if boul_array[-1] == 1:
-                boul_array[full[0] - 1] = 1
-                for conc_array in concs:
-                    conc_array[full[0] - 1] = conc_array[full[0]]
-
-            elif boul_array[0] == 1:
-                boul_array[full[-1] + 1] = 1
-                for conc_array in concs:
-                    conc_array[full[-1] + 1] = conc_array[full[-1]]
-
-            elif loc:
-                boul_array[full[-1] + 1] = 1
-                for conc_array in concs:
-                    conc_array[full[-1] + 1] = conc_array[full[-1]]
-
-            else:
-                boul_array[full[0] - 1] = 1
-                for conc_array in concs:
-                    conc_array[full[0] - 1] = conc_array[full[0]]
+        for c in concs:
+            c[full[0] - 1] = c[full[0]]
+            c[full[-1] + 1] = c[full[-1]]
+        boul_array[full[0] - 1] = 1
+        boul_array[full[-1] + 1] = 1
 
         return concs, boul_array
 
@@ -399,11 +376,13 @@ class Solver:  # Defines iterative solver methods
                 # bool array used only for growth
                 bool_array = np.zeros(J)
                 bool_array[int(J / 2)] = 1
+                bool_array[int(J / 2) -1 ] = 1
                 # bool_list.append(bool_array)
                 concentrations = [Solver.create(steady_conc[i], size=J, growth=growth, initial=bool_array) for i in
                                   range(2)]
-                newL = 1
-                ccc = [concentrations]
+                newL = 2
+                oldL = 2
+                # ccc = [concentrations]
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
@@ -420,25 +399,28 @@ class Solver:  # Defines iterative solver methods
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
                         if newL < J:
+
                             newL = int(Solver.exponential_growth(hour))
-                            concentrations_new = Solver.growth_bounds(concentrations_new, bool_array, newL)
+                            if newL - oldL == 2:
+
+                                concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array)
+                                oldL = newL
 
                     if growth == 'linear':
                         if newL < J:
                             newL = int(Solver.linear_growth(hour))
-                            concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array, newL)
+                            if newL - oldL == 2:
+                                concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array)
+                                oldL = newL
 
                     concentrations = copy.deepcopy(concentrations_new)
-                    ccc.append(concentrations[0])
+                    # ccc.append(concentrations[0])
 
                 fourier = Solver.fourier_classify(concentrations)
                 peaks = Solver.peaks_classify(concentrations)
                 if fourier and peaks:
                     print('Found one!')
-                # t_grid = np.array([n*dt for n in range(num_timepoints+2)])
-                # x_grid = np.array([n*dx for n in range(50)])
-                # Solver.surfpattern(ccc, grids=[x_grid,t_grid])
-                # Solver.plot_conc(concentrations)
+
                 fourier_list.append((fourier, peaks))
                 conc_list.append(concentrations)
 
