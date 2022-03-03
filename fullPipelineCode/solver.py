@@ -340,7 +340,6 @@ class Solver:  # Defines iterative solver methods
         return np.array([fx, fy])
 
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
-
         # Calculate A and B matrices for each species.
         A_matrices = [Solver.a_matrix(params["alphan_x"], J), Solver.a_matrix(params["alphan_y"], J)]
         B_matrices = [Solver.b_matrix(params["alphan_x"], J), Solver.b_matrix(params["alphan_y"], J)]
@@ -382,7 +381,9 @@ class Solver:  # Defines iterative solver methods
                                   range(2)]
                 newL = 2
                 oldL = 2
-                # ccc = [concentrations]
+
+                all_concs = [concentrations]
+
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
@@ -414,15 +415,18 @@ class Solver:  # Defines iterative solver methods
                                 oldL = newL
 
                     concentrations = copy.deepcopy(concentrations_new)
-                    # ccc.append(concentrations[0])
-
+                    if kwargs["save_all"]:
+                        all_concs.append(concentrations)
                 fourier = Solver.fourier_classify(concentrations)
                 peaks = Solver.peaks_classify(concentrations)
                 if fourier and peaks:
                     print('Found one!')
 
                 fourier_list.append((fourier, peaks))
-                conc_list.append(concentrations)
+                if not kwargs["save_all"]:
+                    conc_list.append(concentrations)
+                else:
+                    conc_list.append(all_concs)
 
             return conc_list, SteadyState_list, LSA_list, fourier_list
 

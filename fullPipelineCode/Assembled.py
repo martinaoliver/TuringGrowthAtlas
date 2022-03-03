@@ -73,7 +73,8 @@ def parse_args(inputs):
         neighbourhood=False,
         upload_params=False,
         results_file=None,
-        param_file=None
+        param_file=None,
+        save_all=False
     )
 
     for a in inputs:
@@ -85,6 +86,8 @@ def parse_args(inputs):
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
 
+    if args["save_all"]=="True":
+        args["save_all"]=True
 
     return args
 
@@ -166,7 +169,7 @@ if __name__ == '__main__':
                     results_dict[k] = v
             print("Saving results...")
 
-            Saving results
+            # Saving results
             with open(f"{args['growth']}_results.pkl", "wb") as file:
                 pickle.dump(results_dict, file)
 
