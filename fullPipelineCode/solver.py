@@ -398,8 +398,9 @@ class Solver:  # Defines iterative solver methods
 
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
+                        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
                         if newL < J:
-                            concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
+
                             newL = int(Solver.exponential_growth(hour))
                             if newL - oldL == 2:
 
