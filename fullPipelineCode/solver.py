@@ -306,7 +306,6 @@ class Solver:  # Defines iterative solver methods
 
     def growth_bounds(concs, boul_array):
 
-        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
         full = np.where(boul_array == 1)[0]
         for c in concs:
             c[full[0] - 1] = c[full[0]]
@@ -400,7 +399,7 @@ class Solver:  # Defines iterative solver methods
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
                         if newL < J:
-
+                            concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
                             newL = int(Solver.exponential_growth(hour))
                             if newL - oldL == 2:
 
@@ -408,6 +407,7 @@ class Solver:  # Defines iterative solver methods
                                 oldL = newL
 
                     if growth == 'linear':
+                        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
                         if newL < J:
                             newL = int(Solver.linear_growth(hour))
                             if newL - oldL == 2:
