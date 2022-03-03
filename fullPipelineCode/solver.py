@@ -408,7 +408,7 @@ class Solver:  # Defines iterative solver methods
                                 oldL = newL
 
                     if growth == 'linear':
-                        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
+                        concentrations_new = [np.multiply(conc_array, boul_array) for conc_array in concentrations_new]
                         if newL < J:
                             newL = int(Solver.linear_growth(hour))
                             if newL - oldL == 2:
