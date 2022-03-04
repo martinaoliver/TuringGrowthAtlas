@@ -178,9 +178,9 @@ if __name__ == '__main__':
     if args['neighbourhood']:
 
         # Import prior results.
-        infile = open(args['results_file'], 'rb')
-        results_dict = pickle.load(infile)
-        infile.close()
+        # infile = open(args['results_file'], 'rb')
+        # results_dict = pickle.load(infile)
+        # infile.close()
 
         # Import parameters.
         infile = open(args['param_file'], 'rb')
@@ -188,16 +188,16 @@ if __name__ == '__main__':
         infile.close()
 
         # Loop through results to identify hits.
-        hits = {}
-        for i in results_dict:
-            if results_dict[i]['Fourier'][0] and results_dict[i]['Fourier'][1]:
-                hits[i] = results_dict[i]
+        # hits = {}
+        # for i in results_dict:
+        #     if results_dict[i]['Fourier'][0] and results_dict[i]['Fourier'][1]:
+        #         hits[i] = results_dict[i]
 
-        for hit in hits:
+        for key, params in parameter_data.items():
 
             ################### PART ONE: ATLAS ########################
             print("Extracting topology...")
-            atlas = {0:(parameter_data[(hit[0],0)][1])}
+            atlas = {0:params[-1]}
 
             ################### PART TWO: PARAMETERS ###################
             print("Sampling parameters...")
@@ -205,7 +205,7 @@ if __name__ == '__main__':
 
             nsamples = args['num_samples']
 
-            hit_params = parameter_data[(hit[0],0)][0]
+            hit_params = params
             hit_params.pop('alphan_x')
             hit_params.pop('alphan_y')
 
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
             print("Saving parameters...")
-            with open(f"{hit}_neighbourhood_parameters.pkl", "wb") as file:
+            with open(f"neighbourhood/{key}_neighbourhood_parameters.pkl", "wb") as file:
                 pickle.dump(params_and_arrays, file)
 
             ################### PART THREE: SOLVE ######################
@@ -251,5 +251,5 @@ if __name__ == '__main__':
                 print("Saving results...")
 
                 # Saving results
-                with open(f"{hit}_results.pkl", "wb") as file:
+                with open(f"neighbourhood/{key}_results.pkl", "wb") as file:
                     pickle.dump(results_dict, file)
