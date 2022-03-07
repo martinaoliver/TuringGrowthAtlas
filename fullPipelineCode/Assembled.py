@@ -6,6 +6,8 @@ from itertools import product, chain
 import pickle
 import numpy as np
 import datetime
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 
 #########################################
@@ -47,7 +49,8 @@ def run_solver(items):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
-
+        print(steadystates)
+        print(len(concs))
         results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
 
         return results
@@ -121,7 +124,7 @@ if __name__ == '__main__':
         args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
 
         # If a pre-existing parameter file is to be used then load it.
-        if args['upload_params'] == True:
+        if args['upload_params']:
 
             infile = open(args['upload_params'], 'rb')
             parameter_data = pickle.load(infile)
@@ -147,10 +150,11 @@ if __name__ == '__main__':
             combinations = product(params.values(), atlas.values())
 
             params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
-
+            # params_and_arrays = {(21963, 0):params_and_arrays[(21963, 0)]}
+            print(params_and_arrays)
             print("Saving parameters...")
-            with open("parameters.pkl", "wb") as file:
-                pickle.dump(params_and_arrays, file)
+            # with open("parameters.pkl", "wb") as file:
+            #     pickle.dump(params_and_arrays, file)
 
         items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
@@ -159,19 +163,24 @@ if __name__ == '__main__':
         timestamp = timestamp.replace(':', '-')[:16]
         timestamp = timestamp.replace(' ', '_')
 
-        chunks = [items[x:x+int(len(items)/10)] for x in range(0, len(items), int(len(items)/10))]
+        if len(items) % 10 == 0:
+            chunks = [items[x:x+int(len(items)/10)] for x in range(0, len(items), int(len(items)/10))]
+        else:
+            chunks = [items]
+
         results_dict = dict()
         for i in chunks:
             print("Running solver...")
             results = multiprocess_wrapper(run_solver, i, args["jobs"])
+
+
             for d in results:
                 for k, v in d.items():
                     results_dict[k] = v
             print("Saving results...")
-
             # Saving results
-            with open(f"{args['growth']}_results.pkl", "wb") as file:
-                pickle.dump(results_dict, file)
+            # with open(f"{args['growth']}_results.pkl", "wb") as file:
+            #     pickle.dump(results_dict, file)
 
 
     # If you wish to do neighbourhood searching of previous results.
@@ -253,3 +262,62 @@ if __name__ == '__main__':
                 # Saving results
                 with open(f"neighbourhood/{key}_results.pkl", "wb") as file:
                     pickle.dump(results_dict, file)
+    """
+    def plot_conc(U):
+
+
+
+        plt.plot(U)
+
+        # fig, ax1 = plt.subplots()
+        # color = 'tab:green'
+        # ax1.set_xlabel('Space')
+        # ax1.set_ylabel('Concentration x', color=color)
+        # ax1.plot(U, color=color)
+        # ax1.tick_params(axis='y')
+
+        # ax2 = ax1.twinx()
+        # color = 'tab:blue'
+        # ax2.set_ylabel('Concentration y', color=color)
+        # ax2.plot(U[1], color=color)
+        # ax2.tick_params(axis='y')
+
+        # fig.tight_layout()
+        plt.show()
+
+    print(results_dict.keys())
+    for i in results_dict:
+        print(results_dict[i]["steadystate"])
+    conc = results_dict[(21963, 0, 1)]["concs"][0]
+    print(len(conc))
+    # print(conc)
+
+    conc = [conc[i] for i in range(len(conc)) if i % 50 ==0]
+    conc = conc[100:]
+
+    # print(len(conc))
+    c = np.array([np.format_float_positional(i, precision=8, unique=False, fractional=False, trim='k') for i in conc[-1]])
+
+    plt.plot(np.linspace(0,49,50),c)
+    plt.show()
+    input()
+    # input()
+
+    stacked = np.vstack(conc)
+    fig = plt.figure()
+    axis = plt.axes(xlim=(0,49),ylim=(np.min(stacked),np.max(stacked)))
+    line, = axis.plot([], [], lw = 3)
+
+    def init():
+        line.set_data([], [])
+        return line
+
+    def animate(i):
+        x = np.array([i for i in range(50)])
+        y = conc[i]
+        line.set_data(x,y)
+        return line,
+
+    anim = FuncAnimation(fig, animate, init_func=init, frames=len(conc))
+    anim.save('concWave.gif', fps = 240)
+    """

@@ -364,6 +364,7 @@ class Solver:  # Defines iterative solver methods
             fourier_list = []
 
             for steady_conc in SteadyState_list:
+                all_concs=[]
 
                 if not growth:
                     LSA_list.append(LSA.LSA(params, topology, hill, steady_conc))
@@ -381,7 +382,7 @@ class Solver:  # Defines iterative solver methods
                 newL = 2
                 oldL = 2
 
-                all_concs = [concentrations]
+                all_concs = [[concentrations[0]],[concentrations[1]]]
 
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
@@ -398,7 +399,7 @@ class Solver:  # Defines iterative solver methods
 
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
-                        concs = [np.multiply(conc_array, boul_array) for conc_array in concs]
+                        concs = [np.multiply(conc_array, bool_array) for conc_array in concs]
                         if newL < J:
 
                             newL = int(Solver.exponential_growth(hour))
@@ -408,7 +409,7 @@ class Solver:  # Defines iterative solver methods
                                 oldL = newL
 
                     if growth == 'linear':
-                        concentrations_new = [np.multiply(conc_array, boul_array) for conc_array in concentrations_new]
+                        concentrations_new = [np.multiply(conc_array, bool_array) for conc_array in concentrations_new]
                         if newL < J:
                             newL = int(Solver.linear_growth(hour))
                             if newL - oldL == 2:
@@ -417,7 +418,8 @@ class Solver:  # Defines iterative solver methods
 
                     concentrations = copy.deepcopy(concentrations_new)
                     if kwargs["save_all"]:
-                        all_concs.append(concentrations)
+                        all_concs[0].append(concentrations[0])
+                        all_concs[1].append(concentrations[1])
                 fourier = Solver.fourier_classify(concentrations)
                 peaks = Solver.peaks_classify(concentrations)
                 if fourier and peaks:
