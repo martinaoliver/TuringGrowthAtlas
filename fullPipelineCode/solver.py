@@ -472,9 +472,9 @@ class Solver:  # Defines iterative solver methods
         plt.show()
 
     def fourier_classify(U, threshold=2, plot=False):
-        
-        # Round to 3dp avoid picking up noise.
-        U = [[round(conc, 3) for conc in morphogen] for morphogen in U]
+
+        # Round to 5sf avoid picking up noise.
+        U = [np.array([np.format_float_positional(conc, precision=5, unique=False, fractional=False, trim='k') for conc in morphogen]) for morphogen in U]
 
         # Compute the fourier transforms.
         transforms = [fft(i) for i in U]
