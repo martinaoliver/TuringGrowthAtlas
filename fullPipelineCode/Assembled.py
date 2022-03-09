@@ -49,8 +49,6 @@ def run_solver(items):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
-        print(steadystates)
-        print(len(concs))
         results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
 
         return results
@@ -150,11 +148,8 @@ if __name__ == '__main__':
             combinations = product(params.values(), atlas.values())
 
             params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
-            # params_and_arrays = {(21963, 0):params_and_arrays[(21963, 0)]}
-            print(params_and_arrays)
-            print("Saving parameters...")
-            # with open("parameters.pkl", "wb") as file:
-            #     pickle.dump(params_and_arrays, file)
+
+
 
         items = [(pa, params_and_arrays[pa], args) for pa in params_and_arrays]
 
@@ -162,6 +157,9 @@ if __name__ == '__main__':
         timestamp = str(datetime.datetime.now())
         timestamp = timestamp.replace(':', '-')[:16]
         timestamp = timestamp.replace(' ', '_')
+        print("Saving parameters...")
+        with open(f"parameters.pkl", "wb") as file:
+            pickle.dump(params_and_arrays, file)
 
         if len(items) % 10 == 0:
             chunks = [items[x:x+int(len(items)/10)] for x in range(0, len(items), int(len(items)/10))]
@@ -178,9 +176,9 @@ if __name__ == '__main__':
                 for k, v in d.items():
                     results_dict[k] = v
             print("Saving results...")
-            # Saving results
-            # with open(f"{args['growth']}_results.pkl", "wb") as file:
-            #     pickle.dump(results_dict, file)
+            Saving results
+            with open(f"{timestamp}{args['growth']}_results.pkl", "wb") as file:
+                pickle.dump(results_dict, file)
 
 
     # If you wish to do neighbourhood searching of previous results.
