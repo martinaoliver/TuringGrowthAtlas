@@ -216,17 +216,32 @@ class LSA:
 
 
 
-    def LSA(params, topology, hill, steady_conc):
+    def old_lsa(eigenvalues):
+        system_class = "Not Turing 1"  # 0 for no typical turing, 1 for typical turing
+        maxeig = None
+        eigen_v_max = eigenvalues[:, 1]  # take the maximum eigenvalue, second column
+        eigen_max_r = eigen_v_max.real  # take the real part
+        if eigen_max_r[0] < 0 and eigen_max_r[-1] < 0:  # check head and tail
+            if np.max(eigen_max_r) > 0:  # check the middle
+                system_class = "Turing 1"
+                maxeig = np.argmax(eigen_max_r) * np.pi / 100  # find the wavenumber of maximum eigenvalue
 
+        return [system_class, maxeig]
+
+    def LSA(params, topology, hill, steady_conc):
         eigenvalues = LSA.calculate_dispersion(params, hill, steady_conc)
         ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
         system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
                                                        stability_ss)  # LSA diffusion (curve analysis)
+
+        old_lsa = LSA.old_lsa(eigenvalues)
+
         LSA_analysis = {
             "steadystate_stability": stability_ss,
             "steadystate_class": ss_class,
             "system_class": system_class,
-            "max_eigenvalue": maxeig}
+            "max_eigenvalue": maxeig,
+            "old_lsa": old_lsa}
 
         return LSA_analysis
 
