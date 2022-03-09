@@ -43,20 +43,20 @@ class Solver: # Defines iterative solver methods
         B = diags(diagonals, [ -1, 0,1]).toarray()
         return B
 
-    def hill_equations(interaction, rate):
+    def hill_equations(interaction, rate, concentration):
         # Returns hill equation as a lambda function for a specified interaction
-
+        print(interaction)
         if interaction == 0:
             # No interaction between morphogens
-            return lambda concentration: 1
+            return 1
 
         if interaction == 1:
             # Activation equation
-            return lambda concentration: 1 / (1 + (rate / concentration) ** 3) # This function is only formatted strangely to avoid an error.
+            return 1 / (1 + (rate / concentration) ** 3) # This function is only formatted strangely to avoid an error.
 
         if interaction == -1:
             # Repression equation
-            return lambda concentration: 1 / (1 + (concentration / rate) ** 3)
+            return 1 / (1 + (concentration / rate) ** 3)
 
     def create(size,perturbation=0.001,steadystate=0.1):
         # Create array concentration grid attribute
@@ -79,7 +79,7 @@ class Solver: # Defines iterative solver methods
         return array
 
     def solve(p, topology, args):
-        print(p)
+
         J = args["system_length"]
         dx = float(J)/(float(J)-1)
 
@@ -100,8 +100,8 @@ class Solver: # Defines iterative solver methods
 
         # Create the reaction equations for this parameter set and topology.
         def react(conc):
-            f_x = p['production_x'] - p['degradation_x']*conc[0] + p['max_conc_x'] * (Solver.hill_equations(topology[0,0], p['k_xx'])(conc[0])) * (Solver.hill_equations(topology[0,1], p['k_yx']))(conc[1])
-            f_y = p['production_y'] - p['degradation_y']*conc[1] + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'])(conc[0])) * (Solver.hill_equations(topology[1,1], p['k_yy']))(conc[1])
+            f_x = p['production_x'] - p['degradation_x']*conc[0] + p['max_conc_x'] * (Solver.hill_equations(topology[0,0], p['k_xx'],conc[0])) * (Solver.hill_equations(topology[0,1], p['k_yx'],conc[1]))
+            f_y = p['production_y'] - p['degradation_y']*conc[1] + p['max_conc_y'] * (Solver.hill_equations(topology[1,0], p['k_xy'],conc[0])) * (Solver.hill_equations(topology[1,1], p['k_yy'],conc[1]))
             return np.array([f_x, f_y])
 
         # Set up starting conditions.

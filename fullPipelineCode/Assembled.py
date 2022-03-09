@@ -86,12 +86,12 @@ def parse_args(inputs):
     args = dict(
         num_nodes=2,
         num_diffusers=2,
-        system_length=50,
-        total_time=1000,
+        system_length=100,
+        total_time=1500,
         num_samples=100000,
         growth=None,
         growth_rate=0.1,
-        dx=0.6,
+        dx=0.2,
         jobs=4,
         neighbourhood=False,
         upload_params=False,
@@ -212,11 +212,10 @@ if __name__ == '__main__':
     results = results[0]
 
 
-    plt.plot(np.linspace(0,49,50),results[1])
-    plt.show()
+    # plt.plot(np.linspace(0,49,50),results[1])
+    # plt.show()
 
-    # conc = [conc[i] for i in range(len(conc)) if i % 50 ==0]
-    # conc = conc[100:]
+    conc = [results[0][i] for i in range(len(results[0])) if i % 50 ==0]
 
     # print(len(conc))
     # c = np.array([np.format_float_positional(i, precision=8, unique=False, fractional=False, trim='k')])
@@ -226,7 +225,7 @@ if __name__ == '__main__':
 
     stacked = np.vstack(conc)
     fig = plt.figure()
-    axis = plt.axes(xlim=(0,49),ylim=(70,90))
+    axis = plt.axes(xlim=(0,99),ylim=(0,15))
     line, = axis.plot([], [], lw = 3)
 
     def init():
@@ -234,7 +233,7 @@ if __name__ == '__main__':
         return line
 
     def animate(i):
-        x = np.array([i for i in range(50)])
+        x = np.array([i for i in range(100)])
         y = conc[i]
         line.set_data(x,y)
         return line,

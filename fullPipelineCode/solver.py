@@ -51,7 +51,7 @@ class Solver:  # Defines iterative solver methods
         return B
 
 
-    def create(steadystate, size, growth, initial, perturbation=0.001):
+    def create(steadystate, size, growth, initial, perturbation=0.000001):
         # define the initial value from steady state
         perturbation = perturbation*steadystate
         low = steadystate - perturbation
