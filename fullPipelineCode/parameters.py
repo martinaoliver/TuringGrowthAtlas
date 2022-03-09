@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-np.random.seed(1)
+np.random.seed(2)
 
 class LHS: # Defines parameter sampling
 

@@ -8,6 +8,7 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from pprint import pprint
 
 
 #########################################
@@ -35,8 +36,29 @@ def multiprocess_wrapper(function, items, cpu):
     return results
 
 
-from solver import Solver
+from solverV2 import Solver
 
+def run_solver(items):
+    index, settings, args = items
+    index_list = [i for i in index]
+
+    try:
+        concs= Solver.solve(settings[0], settings[1], args)
+        indexes = []
+        for i in range(len(concs)):
+            new_index = index_list + [i]
+            indexes.append(tuple(new_index))
+
+        # results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
+
+        # results = {i: {"concs": c
+        return concs
+
+    except:
+        traceback.print_exc()
+        raise
+
+from solver import Solver
 
 def run_solver(items):
     index, settings, args = items
@@ -49,16 +71,14 @@ def run_solver(items):
             new_index = index_list + [i]
             indexes.append(tuple(new_index))
 
-        print(steadystates)
-        print(len(concs))
-        results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
+        # results = {i: {"concs": c, "steadystate":s, "LSA":l, "Fourier":f} for i,c,s,l,f in zip(indexes, concs, steadystates, LSA, fourier)}
 
-        return results
+        # results = {i: {"concs": c
+        return concs[0]
 
     except:
         traceback.print_exc()
         raise
-
 
 # Function for parsing command line arguments
 
@@ -82,16 +102,16 @@ def parse_args(inputs):
 
     for a in inputs:
 
-        if "-" in a:
+        if a[0] == "-":
             try:
                 command_line_input = int(inputs[inputs.index(a) + 1])
             except:
                 command_line_input = inputs[inputs.index(a) + 1]
             args[a[1:]] = command_line_input
 
+
     if args["save_all"]=="True":
         args["save_all"]=True
-
     return args
 
 
@@ -130,6 +150,10 @@ if __name__ == '__main__':
             parameter_data = pickle.load(infile)
             infile.close()
             params_and_arrays = parameter_data
+            params_and_arrays = {(40283,0):params_and_arrays[(40283,0)]}
+            for p in params_and_arrays:
+                params_and_arrays[p][0]['alphan_x'] = Solver.calculate_alpha(params_and_arrays[p][0]['diffusion_x'], args["dt"], args["dx"])
+                params_and_arrays[p][0]['alphan_y'] = Solver.calculate_alpha(params_and_arrays[p][0]['diffusion_y'], args["dt"], args["dx"])
 
         # Otherwise generate parameters from scratch.
         else:
@@ -151,7 +175,7 @@ if __name__ == '__main__':
 
             params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
             # params_and_arrays = {(21963, 0):params_and_arrays[(21963, 0)]}
-            print(params_and_arrays)
+
             print("Saving parameters...")
             # with open("parameters.pkl", "wb") as file:
             #     pickle.dump(params_and_arrays, file)
@@ -174,9 +198,9 @@ if __name__ == '__main__':
             results = multiprocess_wrapper(run_solver, i, args["jobs"])
 
 
-            for d in results:
-                for k, v in d.items():
-                    results_dict[k] = v
+            # for d in results:
+            #     for k, v in d.items():
+            #         results_dict[k] = v
             print("Saving results...")
             # Saving results
             # with open(f"{args['growth']}_results.pkl", "wb") as file:
@@ -262,7 +286,7 @@ if __name__ == '__main__':
                 # Saving results
                 with open(f"neighbourhood/{key}_results.pkl", "wb") as file:
                     pickle.dump(results_dict, file)
-    """
+
     def plot_conc(U):
 
 
@@ -285,27 +309,30 @@ if __name__ == '__main__':
         # fig.tight_layout()
         plt.show()
 
-    print(results_dict.keys())
-    for i in results_dict:
-        print(results_dict[i]["steadystate"])
-    conc = results_dict[(21963, 0, 1)]["concs"][0]
-    print(len(conc))
-    # print(conc)
+    # print(results_dict.keys())
+    # for i in results_dict:
+    #     print(results_dict[i]["steadystate"])
+    # conc = results_dict[(40283,0, 0)]["concs"][0]
+    # print(len(conc))
+    print(results)
+    results = results[0]
 
-    conc = [conc[i] for i in range(len(conc)) if i % 50 ==0]
-    conc = conc[100:]
+
+    plt.plot(np.linspace(0,49,50),results[1])
+    plt.show()
+
+    # conc = [conc[i] for i in range(len(conc)) if i % 50 ==0]
+    # conc = conc[100:]
 
     # print(len(conc))
-    c = np.array([np.format_float_positional(i, precision=8, unique=False, fractional=False, trim='k') for i in conc[-1]])
+    # c = np.array([np.format_float_positional(i, precision=8, unique=False, fractional=False, trim='k')])
 
-    plt.plot(np.linspace(0,49,50),c)
-    plt.show()
     input()
     # input()
 
     stacked = np.vstack(conc)
     fig = plt.figure()
-    axis = plt.axes(xlim=(0,49),ylim=(np.min(stacked),np.max(stacked)))
+    axis = plt.axes(xlim=(0,49),ylim=(70,90))
     line, = axis.plot([], [], lw = 3)
 
     def init():
@@ -320,4 +347,3 @@ if __name__ == '__main__':
 
     anim = FuncAnimation(fig, animate, init_func=init, frames=len(conc))
     anim.save('concWave.gif', fps = 240)
-    """

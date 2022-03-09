@@ -340,6 +340,7 @@ class Solver:  # Defines iterative solver methods
 
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
         # Calculate A and B matrices for each species.
+
         A_matrices = [Solver.a_matrix(params["alphan_x"], J), Solver.a_matrix(params["alphan_y"], J)]
         B_matrices = [Solver.b_matrix(params["alphan_x"], J), Solver.b_matrix(params["alphan_y"], J)]
 
@@ -387,15 +388,21 @@ class Solver:  # Defines iterative solver methods
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
-                    full = np.where(concentrations_new[0] != 0)[0]
-                    concs_react = [conc[conc != 0] for conc in concentrations_new]
-                    reactions = Solver.react(concs_react, params, **hill) * dt
-                    reactions_padded = copy.deepcopy(concentrations_new)
-                    for i in range(len(reactions_padded)):
-                        reactions_padded[i][full] = reactions[i]
-                    concentrations_new = [
-                        np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
-                        for n in range(2)]
+                    if growth:
+                        full = np.where(concentrations_new[0] != 0)[0]
+                        concs_react = [conc[conc != 0] for conc in concentrations_new]
+                        reactions = Solver.react(concs_react, params, **hill) * dt
+                        reactions_padded = copy.deepcopy(concentrations_new)
+                        for i in range(len(reactions_padded)):
+                            reactions_padded[i][full] = reactions[i]
+                        concentrations_new = [
+                            np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
+                            for n in range(2)]
+                    else:
+                        reactions = Solver.react(concentrations_new, params, **hill) * dt
+                        concentrations_new = [
+                            np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions[n]))
+                            for n in range(2)]
 
                     hour = ti / (num_timepoints / total_time)
                     if growth == 'exponential':
