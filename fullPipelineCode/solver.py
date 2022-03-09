@@ -317,7 +317,7 @@ class Solver:  # Defines iterative solver methods
     def exponential_growth(t, s=0.0001, initialL=2):
         return (initialL * np.exp(s * t))
 
-    def linear_growth(t, s=0.03335, initialL=2):
+    def linear_growth(t, s=0.06, initialL=2):
         return initialL + t * s
 
     def growth_bounds(concs, boul_array):
