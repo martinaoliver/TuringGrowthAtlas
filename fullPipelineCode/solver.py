@@ -19,218 +19,6 @@ cmap = cm.Spectral
 np.random.seed(1)
 
 
-class NewtonRaphson:
-    # Defines Newton Raphson methods for finding steadystates
-
-    def initiate_jacobian(params, hill):
-        # Generate Jacobian matrix
-        # Retains expressions with X and Y as placeholder symbols
-        X, Y = symbols('X'), symbols('Y')
-        functions = Matrix(Solver.react([X, Y], params, **hill))
-        jacobian_topology = functions.jacobian([X, Y])
-        return jacobian_topology, X, Y
-
-    def iterate(x_initial, params, hill, jac, X, Y, max_num_iter=15, tolerance=0.0001, alpha=1):
-        # Perform NR iteration on one initial condition
-        # Max number of iteration is 15 by default
-        x = x_initial
-        fx = Solver.react(x, params, **hill)
-        err = np.linalg.norm(fx)
-        iter = 0
-
-        # perform the Newton-Raphson iteration
-        while err > tolerance and iter < max_num_iter and np.all(x != 0):
-            jac_temp = jac.subs(X, x[0])
-            jac_temp = jac_temp.subs(Y, x[1])
-            jac_temp = np.array(jac_temp, dtype=float)
-
-            # update
-            x = x - alpha * np.linalg.solve(jac_temp, fx)
-            fx = Solver.react(x, params, **hill)
-            err = np.linalg.norm(fx)
-            iter += 1
-
-        # check that there are no negatives
-        if err < tolerance:
-            if sum(item < 0 for item in x) == 0:
-                return (x, err, 0)
-
-    def run(initial_conditions, params, hill):
-        # Run Newton Raphson algorithm on multiple conditions
-        # If steady state identified add to steady state list
-        # Returns list of steady states
-
-        SteadyState_list = []
-
-        # initialise jacobian matrix
-        jac, X, Y = NewtonRaphson.initiate_jacobian(params, hill)
-
-        # loop through sampled conditions
-        for condition in initial_conditions:
-            # Perform newton raphson iteration on one initial condition
-            xn = NewtonRaphson.iterate(condition, params, hill, jac, X, Y)
-
-            # If xn is returned as a list check for duplicates in SteadyState_list,
-            # as well as complex numbers and negative numbers
-            if xn:
-                # Retrieve concentration arrays from xn
-                xs = xn[0]
-
-                # Check for negative instances
-                if np.all(xs > 0):
-                    if len(SteadyState_list) == 0:
-                        SteadyState_list.append(xs)
-                    else:
-                        # compare with previous steady states for duplicates
-                        logiclist = []
-                        for state in SteadyState_list:
-                            logiclist.append(
-                                np.allclose(state, xs, rtol=10 ** -2, atol=0))  # PROCEED IF NO TRUES FOUND
-                        if not True in logiclist:  # no similar steady states previously found
-                            SteadyState_list.append(xs)
-
-        return SteadyState_list
-
-class LSA:
-
-    # Define LSA check functions
-    def diffusion_jacobian(params, hill, steady_state):
-        # Generate diffusion Jacobian matrix with steady state
-        X, Y = symbols('X'), symbols('Y')
-        functions = Matrix(Solver.react([X, Y], params, **hill))
-        jac = functions.jacobian([X, Y])
-        # Substitute X, Y with steady state value
-        Xs, Ys = steady_state
-        jac_diff = jac.subs(X, Xs)
-        jac_diff = jac_diff.subs(Y, Ys)
-        jac_diff = np.array(jac_diff, dtype=float)
-
-        return jac_diff
-
-    def calculate_dispersion(params, hill, steady_state, top_dispersion=5000, n_species=2):
-        jac_diff = LSA.diffusion_jacobian(params, hill, steady_state)
-        wvn_list = np.array(list(range(0, top_dispersion + 1))) * np.pi / 100
-        count = 0
-        eigenvalues = np.zeros((len(wvn_list), n_species), dtype=np.complex)
-        Diff_matrix = np.array([[params['diffusion_x'], 0], [0, params['diffusion_y']]])
-
-        for wvn in wvn_list:
-            jac_temp = jac_diff - Diff_matrix * wvn ** 2  # calculate the diffusion jacobian matrix
-            eigenval, eigenvec = np.linalg.eig(jac_temp)  # solve the eigenvalue
-            eigenvalues[count] = np.sort(eigenval)  # sort eigenvalues
-            count += 1
-
-        return eigenvalues
-
-
-    def stability_no_diffusion(eigenvalues):
-
-        eigenvalues_ss = eigenvalues[0, -1]
-
-        # oscillations in ss
-        if np.iscomplex(eigenvalues_ss):
-            complex_ss = True
-        else:
-            complex_ss = False
-
-        # stability in  ss
-        if eigenvalues_ss > 0:
-            stability_ss = 'unstable'
-        elif eigenvalues_ss == 0:
-            stability_ss = 'lyapunov stable'
-        elif eigenvalues_ss < 0:
-            stability_ss = 'stable'
-
-        # classification of ss
-        if complex_ss == False:
-            if stability_ss == 'stable':
-                ss_class = 'stable point'
-            elif stability_ss == 'lyapunov stable':
-                ss_class = 'neutral point'
-            elif stability_ss == 'unstable':
-                ss_class = 'unstable point'
-        if complex_ss == True:
-            if stability_ss == 'stable':
-                ss_class = 'stable spiral'
-            elif stability_ss == 'lyapunov stable':
-                ss_class = 'neutral center'
-            elif stability_ss == 'unstable':
-                ss_class = 'unstable spiral'
-
-        return ss_class, complex_ss, stability_ss
-
-    # Curve check
-    def stability_diffusion(eigenvalues, complex_ss, stability_ss):
-        maxeig = np.amax(eigenvalues)  # highest eigenvalue of all wvn's and all the 6 eigenvalues.
-        maxeig_real = maxeig.real  # real part of maxeig
-
-        if stability_ss == 'stable' or stability_ss == 'neutral':  # turing I, turing I oscillatory, turing II, Unstable
-            if maxeig_real <= 0:
-                system_class = 'simple stable'
-            elif maxeig_real > 0:  # turing I, turing I oscillatory, turing II
-                if np.any(eigenvalues[-1, :] == maxeig):
-                    system_class = 'turing II'
-                elif np.all(
-                        eigenvalues[-1, :] != maxeig):  # highest instability does not appear with highest wavenumber)
-                    if np.any(eigenvalues.imag[:,
-                              -1] > 0):  # if the highest eigenvalue contains imaginary numbers oscillations might be found
-                        system_class = 'turing I oscillatory'
-                    elif np.all(eigenvalues.imag[:,
-                                -1] <= 0):  # if the highest eigenvalue does not contain imaginary numbers
-                        system_class = 'turing I'
-                    else:
-                        system_class = 'unclassified'
-                else:
-                    system_class = 'unclassified'
-            else:
-                system_class = 'unclassified'
-
-        elif stability_ss == 'unstable':  # fully unstable or hopf
-            if complex_ss == False:
-                system_class = 'simple unstable'
-
-            elif complex_ss == True and eigenvalues.imag[-1, -1] == 0:  # hopf
-                # sign changes
-                real_dominant_eig = eigenvalues.real[:, -1]
-                sign_changes = len(
-                    list(itertools.groupby(real_dominant_eig, lambda real_dominant_eig: real_dominant_eig > 0))) - 1
-                if sign_changes == 1:
-                    system_class = 'hopf'
-
-                elif sign_changes > 1:
-                    if np.any(eigenvalues[-1, -1] == maxeig_real):
-                        system_class = 'turing II hopf'
-                    elif np.all(eigenvalues[
-                                    -1, -1] != maxeig_real):  # highest instability does not appear with highest wavenumber)
-                        system_class = 'turing I hopf'
-                    else:
-                        system_class = 'unclassified'
-                else:
-                    system_class = 'unclassified'
-            else:
-                system_class = 'unclassified'
-        else:
-            system_class = 'unclassified'
-
-        return system_class, maxeig
-
-
-
-    def LSA(params, topology, hill, steady_conc):
-
-        eigenvalues = LSA.calculate_dispersion(params, hill, steady_conc)
-        ss_class, complex_ss, stability_ss = LSA.stability_no_diffusion(eigenvalues)  # LSA no diffusion (k=0)
-        system_class, maxeig = LSA.stability_diffusion(eigenvalues, complex_ss,
-                                                       stability_ss)  # LSA diffusion (curve analysis)
-        LSA_analysis = {
-            "steadystate_stability": stability_ss,
-            "steadystate_class": ss_class,
-            "system_class": system_class,
-            "max_eigenvalue": maxeig}
-
-        return LSA_analysis
-
-
 class Solver:  # Defines iterative solver methods
 
     def calculate_alpha(D, dt, dx, **kwargs):
@@ -241,7 +29,6 @@ class Solver:  # Defines iterative solver methods
         return D * dt / (2. * dx * dx)
 
     def a_matrix(alphan, size):
-
         # Function for preparing inverse A matrix for A^(-1).(B.U + f(u)
         # Diffusion terms for U+1 time step
         # alphan = D / (2 * delta_x**2) where D is the diffusion constant and delta_x is spatial grid separation
@@ -263,28 +50,6 @@ class Solver:  # Defines iterative solver methods
         B = diags(diagonals, [-1, 0, 1]).toarray()
         return B
 
-    def loguniform(low=-3, high=3, size=None):
-        # Return a logarithmic distribution
-        return (10) ** (np.random.uniform(low, high, size))
-
-    def lhs_list(data, nsample):
-        # This function accepts an already existing distribution and a required number of samples
-        # and outputs an array with samples distributed in a latin-hyper-cube sampling manner.
-        nvar = data.shape[1]
-        ran = np.random.uniform(size=(nsample, nvar))
-        s = np.zeros((nsample, nvar))
-        for j in range(0, nvar):
-            idx = np.random.permutation(nsample) + 1
-            P = ((idx - ran[:, j]) / nsample) * 100
-            s[:, j] = np.percentile(data[:, j], P)
-        return s
-
-    def lhs_initial_conditions(n_initialconditions=10, n_species=2):
-        # Input number of initial conditions needed and the number of species in each sample obtain an array with the
-        # initial conditions distributed in a lhs manner.
-        data = np.column_stack(([Solver.loguniform(size=100000)] * n_species))
-        initial_conditions = Solver.lhs_list(data, n_initialconditions)
-        return np.array(initial_conditions, dtype=np.float)
 
     def create(steadystate, size, growth, initial, perturbation=0.001):
         # define the initial value from steady state
@@ -335,15 +100,15 @@ class Solver:  # Defines iterative solver methods
         X, Y = conc
         fx = params['production_x'] - params['degradation_x'] * X + params['max_conc_x'] * hillxx(X) * hillyx(Y)
         fy = params['production_y'] - params['degradation_y'] * Y + params['max_conc_y'] * hillxy(X) * hillyy(Y)
-
         return np.array([fx, fy])
 
     def solve(params, topology, growth, dt, dx, J, total_time, num_timepoints, **kwargs):
         # Calculate A and B matrices for each species.
-
+        print(params)
         A_matrices = [Solver.a_matrix(params["alphan_x"], J), Solver.a_matrix(params["alphan_y"], J)]
         B_matrices = [Solver.b_matrix(params["alphan_x"], J), Solver.b_matrix(params["alphan_y"], J)]
-
+        print(A_matrices)
+        print(len(A_matrices))
         # Define hill equations
         hill = dict(
             hillxx=Solver.hill_equations(topology[0, 0], params['k_xx']),
@@ -352,9 +117,8 @@ class Solver:  # Defines iterative solver methods
             hillyy=Solver.hill_equations(topology[1, 1], params['k_yy'])
         )
 
-        # Find the steady state
-        initial_conditions = Solver.lhs_initial_conditions(n_initialconditions=100, n_species=2)
-        SteadyState_list = NewtonRaphson.run(initial_conditions, params, hill)
+
+        SteadyState_list =[[4.54089711, 7.71675421]]
 
         # Set up starting conditions.
 
@@ -367,19 +131,13 @@ class Solver:  # Defines iterative solver methods
             for steady_conc in SteadyState_list:
                 all_concs=[]
 
-                if not growth:
-                    LSA_list.append(LSA.LSA(params, topology, hill, steady_conc))
-                else:
-                    LSA_list.append(None)
-                # bool_list = list()
-                # Crank Nicolson solver
-                # bool array used only for growth
                 bool_array = np.zeros(J)
                 bool_array[int(J / 2)] = 1
                 bool_array[int(J / 2) -1 ] = 1
                 # bool_list.append(bool_array)
                 concentrations = [Solver.create(steady_conc[i], size=J, growth=growth, initial=bool_array) for i in
                                   range(2)]
+
                 newL = 2
                 oldL = 2
 
@@ -388,40 +146,13 @@ class Solver:  # Defines iterative solver methods
                 for ti in range(num_timepoints):
                     # Extra steps to prevent division by 0 when calculating reactions
                     concentrations_new = copy.deepcopy(concentrations)
-                    if growth:
-                        full = np.where(concentrations_new[0] != 0)[0]
-                        concs_react = [conc[conc != 0] for conc in concentrations_new]
-                        reactions = Solver.react(concs_react, params, **hill) * dt
-                        reactions_padded = copy.deepcopy(concentrations_new)
-                        for i in range(len(reactions_padded)):
-                            reactions_padded[i][full] = reactions[i]
-                        concentrations_new = [
-                            np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions_padded[n]))
-                            for n in range(2)]
-                    else:
-                        reactions = Solver.react(concentrations_new, params, **hill) * dt
-                        concentrations_new = [
-                            np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions[n]))
-                            for n in range(2)]
 
-                    hour = ti / (num_timepoints / total_time)
-                    if growth == 'exponential':
-                        concs = [np.multiply(conc_array, bool_array) for conc_array in concs]
-                        if newL < J:
+                    reactions = Solver.react(concentrations_new, params, **hill) * dt
+                    concentrations_new = [
+                        np.dot(A_matrices[n], (B_matrices[n].dot(concentrations_new[n]) + reactions[n]))
+                        for n in range(2)]
 
-                            newL = int(Solver.exponential_growth(hour))
-                            if newL - oldL == 2:
 
-                                concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array)
-                                oldL = newL
-
-                    if growth == 'linear':
-                        concentrations_new = [np.multiply(conc_array, bool_array) for conc_array in concentrations_new]
-                        if newL < J:
-                            newL = int(Solver.linear_growth(hour))
-                            if newL - oldL == 2:
-                                concentrations_new, bool_array = Solver.growth_bounds(concentrations_new, bool_array)
-                                oldL = newL
 
                     concentrations = copy.deepcopy(concentrations_new)
                     if kwargs["save_all"]:

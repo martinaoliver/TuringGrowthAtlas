@@ -19,6 +19,8 @@ class Solver: # Defines iterative solver methods
         return D*dt/(2.*dx*dx)
 
     def a_matrix(alphan, size):
+        print(size)
+        print(alphan)
 
         # Function for preparing inverse A matrix for A^(-1).(B.U + f(u)
         # Diffusion terms for U+1 time step
@@ -77,28 +79,24 @@ class Solver: # Defines iterative solver methods
         return array
 
     def solve(p, topology, args):
-
+        print(p)
         J = args["system_length"]
         dx = float(J)/(float(J)-1)
 
         total_time = args["total_time"]
-        num_timepoints = 10*total_time
+        num_timepoints = 12*total_time
         dt = float(total_time) / float(num_timepoints - 1)
 
-        for param in ['diffusion_x', 'diffusion_y']:
-
-            # Calculate alpha values for each species.
-            p[f"alphan_{param[-1]}"] = Solver.calculate_alpha(p[param], dx, dt)
+        # for param in ['diffusion_x', 'diffusion_y']:
+        #
+        #     # Calculate alpha values for each species.
+        #     p[f"alphan_{param[-1]}"] = Solver.calculate_alpha(p[param], dx, dt)
 
         # Calculate A and B matrices for each species.
-        if args["growth"] == None:
-            A_matrices = [[Solver.a_matrix(p["alphan_x"],J),Solver.a_matrix(p["alphan_y"],J)]]
-            B_matrices = [[Solver.b_matrix(p["alphan_x"],J),Solver.b_matrix(p["alphan_y"],J)]]
-
-        # If growth is occurring, generate a list of A and B matrices for each new size.
-        if args["growth"] == "linear":
-            A_matrices = [[Solver.a_matrix(p["alphan_x"],j+1),Solver.a_matrix(p["alphan_y"],j+1)] for j in range(J)]
-            B_matrices = [[Solver.b_matrix(p["alphan_x"],j+1),Solver.b_matrix(p["alphan_y"],j+1)] for j in range(J)]
+        A_matrix = [Solver.a_matrix(p["alphan_x"],J),Solver.a_matrix(p["alphan_y"],J)]
+        B_matrix = [Solver.b_matrix(p["alphan_x"],J),Solver.b_matrix(p["alphan_y"],J)]
+        print(A_matrix)
+        print(len(A_matrix))
 
         # Create the reaction equations for this parameter set and topology.
         def react(conc):
@@ -108,14 +106,7 @@ class Solver: # Defines iterative solver methods
 
         # Set up starting conditions.
 
-        A_matrix = A_matrices[0]
-        B_matrix = B_matrices[0]
-
-        if args['growth'] == None:
-            currentJ = J
-        elif args['growth'] == 'linear':
-            currentJ = 1
-
+        currentJ = J
         ss = [4.54089711, 7.71675421]
 
         concentrations = [Solver.create(size = currentJ, steadystate=i) for i in ss]
@@ -128,13 +119,6 @@ class Solver: # Defines iterative solver methods
 
             reactions = react(concentrations)*dt
             concentrations_new = [np.dot(A_matrix[n], (B_matrix[n].dot(concentrations_new[n]) + reactions[n])) for n in range(2)]
-
-            hour = ti / num_timepoints / args['total_time']
-            if args["growth"] == "linear" and hour % 1==0:
-                concentrations_new = [Solver.grow(c) for c in concentrations_new]
-                A_matrix = A_matrices[currentJ]
-                B_matrix = B_matrices[currentJ]
-                currentJ +=1
 
             concentrations = copy.deepcopy(concentrations_new)
 
