@@ -77,5 +77,5 @@ class Atlas:
         adj_matrix_array = initial.copy()
         adj_matrix_array_connected = self.remove_unconnected(adj_matrix_array)
         #atlas_matrix_array = self.remove_isomorphism(adj_matrix_array_connected, nodes = nodes, diffusers = diffusers)
-        atlas_matrix_array = {count: array for count, array in enumerate(atlas_matrix_array)}
+        atlas_matrix_array = {count: array for count, array in enumerate(adj_matrix_array_connected)}
         return atlas_matrix_array
