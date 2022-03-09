@@ -76,6 +76,6 @@ class Atlas:
         initial = [np.reshape(np.array(i), (nodes, nodes)) for i in itertools.product([0, 1,-1], repeat = nodes*nodes)]
         adj_matrix_array = initial.copy()
         adj_matrix_array_connected = self.remove_unconnected(adj_matrix_array)
-        atlas_matrix_array = self.remove_isomorphism(adj_matrix_array_connected, nodes = nodes, diffusers = diffusers)
+        #atlas_matrix_array = self.remove_isomorphism(adj_matrix_array_connected, nodes = nodes, diffusers = diffusers)
         atlas_matrix_array = {count: array for count, array in enumerate(atlas_matrix_array)}
         return atlas_matrix_array
