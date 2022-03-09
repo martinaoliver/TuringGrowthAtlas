@@ -114,7 +114,7 @@ if __name__ == '__main__':
         #
         # atlas = Atlas()
         # atlas = atlas.create_adjacency_matrices(nodes=args['num_nodes'], diffusers=args['num_diffusers'])
-        atlas = {0:np.array([[1,1],[-1,0]])}
+        atlas = {0:np.array([[1,-1],[1,0]])}
 
         ################### PART TWO: PARAMETERS ###################
 
