@@ -218,15 +218,16 @@ class LSA:
 
     def old_lsa(eigenvalues):
         system_class = "Not Turing 1"  # 0 for no typical turing, 1 for typical turing
+        maxeig_k = None
         maxeig = None
         eigen_v_max = eigenvalues[:, 1]  # take the maximum eigenvalue, second column
         eigen_max_r = eigen_v_max.real  # take the real part
         if eigen_max_r[0] < 0 and eigen_max_r[-1] < 0:  # check head and tail
             if np.max(eigen_max_r) > 0:  # check the middle
                 system_class = "Turing 1"
-                maxeig = np.argmax(eigen_max_r) * np.pi / 100  # find the wavenumber of maximum eigenvalue
-
-        return [system_class, maxeig]
+                maxeig_k = np.argmax(eigen_max_r) * np.pi / 100  # find the wavenumber of maximum eigenvalue
+                maxeig = np.max(eigen_max_r)
+        return [system_class, maxeig, maxeig_k]
 
     def LSA(params, topology, hill, steady_conc):
         eigenvalues = LSA.calculate_dispersion(params, hill, steady_conc)
