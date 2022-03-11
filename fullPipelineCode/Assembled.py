@@ -200,24 +200,24 @@ if __name__ == '__main__':
         #     if results_dict[i]['Fourier'][0] and results_dict[i]['Fourier'][1]:
         #         hits[i] = results_dict[i]
 
-        for key, params in parameter_data.items():
+        for key, hit_params in parameter_data.items():
 
             ################### PART ONE: ATLAS ########################
             print("Extracting topology...")
-            atlas = {0:params[-1]}
+            atlas = {0:hit_params[-1]}
 
             ################### PART TWO: PARAMETERS ###################
             print("Sampling parameters...")
             from parameters import LHS_neighbourhood
 
             nsamples = args['num_samples']
-
-            hit_params = params
+            
+            hit_params = hit_params[0]
             hit_params.pop('alphan_x')
             hit_params.pop('alphan_y')
 
             sampler = LHS_neighbourhood(nsamples=args['num_samples'], params = hit_params)
-            params = sampler.sample_parameters()
+            param_set = sampler.sample_parameters()
 
             # Prepare grid space, rate, and time
             args["J"] = args["system_length"]
@@ -225,13 +225,13 @@ if __name__ == '__main__':
             args["dt"] = args["total_time"] / (args["num_timepoints"]-1)
 
             # Calculate alpha values for each species.
-            for p in params:
-                params[p]['alphan_x'] = Solver.calculate_alpha(params[p]['diffusion_x'], **args)
-                params[p]['alphan_y'] = Solver.calculate_alpha(params[p]['diffusion_y'], **args)
+            for p in param_set:
+                param_set[p]['alphan_x'] = Solver.calculate_alpha(param_set[p]['diffusion_x'], **args)
+                param_set[p]['alphan_y'] = Solver.calculate_alpha(param_set[p]['diffusion_y'], **args)
 
             # Join altas and params
-            indexes = product(params.keys(), atlas.keys())
-            combinations = product(params.values(), atlas.values())
+            indexes = product(param_set.keys(), atlas.keys())
+            combinations = product(param_set.values(), atlas.values())
 
             params_and_arrays = {index: combination for index, combination in zip(indexes, combinations)}
 
