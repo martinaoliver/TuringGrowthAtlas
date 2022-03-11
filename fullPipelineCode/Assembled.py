@@ -176,7 +176,7 @@ if __name__ == '__main__':
                 for k, v in d.items():
                     results_dict[k] = v
             print("Saving results...")
-            Saving results
+            # Saving results
             with open(f"{timestamp}{args['growth']}_results.pkl", "wb") as file:
                 pickle.dump(results_dict, file)
 
