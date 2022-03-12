@@ -83,7 +83,7 @@ def fourier_classify(U, threshold=2, plot=False, title = 'plot', label = '', gro
         for i in [0,1]:               
             amplitudes = transforms[i]
             freq = fftfreq(100, 0.2)
-            freqs.append(freq[np.argmax(abs(amplitudes)[1:])])
+            freqs.append(round(freq[np.argmax(abs(amplitudes)[1:])], 2))
         return freqs
             
     return peaks_found
