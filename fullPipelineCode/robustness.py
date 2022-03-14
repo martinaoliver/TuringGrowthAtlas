@@ -47,6 +47,8 @@ for path in pathlist:
 
      path_in_str = str(path)
      print(path_in_str)
+    
+     bracket = path_in_str.index(')')
      
      if 'results' in path_in_str:
          
@@ -65,9 +67,9 @@ for path in pathlist:
                  hit_counter += 1
                  
          if growth:
-             growth_robustness[i] = hit_counter/1000
+             growth_robustness[path_in_str[:(bracket+1)]] = hit_counter/1000
          else:
-             nongrowth_robustness[i] = hit_counter/1000       
+             nongrowth_robustness[path_in_str[:(bracket+1)]] = hit_counter/1000       
          
      elif 'parameters' in path_in_str:
          pass
