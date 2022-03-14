@@ -55,6 +55,7 @@ for path in pathlist:
          infile.close()
          results = FilterNone(results)
          
+         growth = False
          if 'growth' in path_in_str:
              growth = True
                  
