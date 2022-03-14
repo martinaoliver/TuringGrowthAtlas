@@ -67,10 +67,10 @@ for path in pathlist:
                  hit_counter += 1
                  
          if growth:
-             growth_robustness[path_in_str[:(bracket+1)]] = hit_counter/1000
+             growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
          else:
-             nongrowth_robustness[path_in_str[:(bracket+1)]] = hit_counter/1000       
-         
+             nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
+                
      elif 'parameters' in path_in_str:
          pass
      
