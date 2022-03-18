@@ -62,7 +62,7 @@ for path in pathlist:
             hit_counter = 0    
             for i in results:
                 if fourier_classify(results[i]['concs'], growth = growth):
-                hit_counter += 1
+                    hit_counter += 1
                  
                  
          if growth:
