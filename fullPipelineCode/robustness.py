@@ -2,6 +2,7 @@ from pathlib import Path
 import pickle
 from scipy.signal import find_peaks
 from scipy.fft import fft, fftfreq
+import tqdm
 
 def FilterNone(results):
     binme = {}
@@ -43,10 +44,10 @@ growth_robustness = {}
 nongrowth_robustness = {}
 
 pathlist = Path('neighbourhood').rglob('*.pkl')
-for path in pathlist:
+for path in tqdm(pathlist):
 
      path_in_str = str(path)
-     print(path_in_str)
+     #print(path_in_str)
     
      bracket = path_in_str.index(')')
      
@@ -68,14 +69,14 @@ for path in pathlist:
                  
          if growth:
              growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
-         else:
+         elif not growth:
              nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
                 
      elif 'parameters' in path_in_str:
          pass
      
-with open('growth_robustness.pkl', 'wb') as f:
-    pickle.dump(growth_robustness, f)
+#with open('growth_robustness.pkl', 'wb') as f:
+#    pickle.dump(growth_robustness, f)
     
-with open('nongrowth_robustness.pkl', 'wb') as f:
+with open('nongrowth_robustness2.pkl', 'wb') as f:
     pickle.dump(nongrowth_robustness, f)
