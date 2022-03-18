@@ -64,11 +64,11 @@ for path in pathlist:
                 if fourier_classify(results[i]['concs'], growth = growth):
                     hit_counter += 1
                  
-                 
-         if growth:
-             growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
-         elif not growth:
-             nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
+         nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))        
+#         if growth:
+ #            growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
+  #       elif not growth:
+   #          nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
                 
      elif 'parameters' in path_in_str:
          pass
