@@ -58,7 +58,7 @@ for path in pathlist:
          results = FilterNone(results)
          
          growth = True
-         if 'growth' in path_in_str:
+         if 'Growth' in path_in_str:
             hit_counter = 0    
             for i in results:
                 if fourier_classify(results[i]['concs'], growth = growth):
