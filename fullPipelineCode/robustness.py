@@ -57,14 +57,14 @@ for path in pathlist:
          infile.close()
          results = FilterNone(results)
          
-         growth = False
-         if not 'growth' in path_in_str:
+         growth = True
+         if 'growth' in path_in_str:
             hit_counter = 0    
             for i in results:
                 if fourier_classify(results[i]['concs'], growth = growth):
                     hit_counter += 1
                  
-            nongrowth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))        
+            growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))        
 #         if growth:
  #            growth_robustness[path_in_str[14:(bracket+1)]] = (hit_counter, len(results))
   #       elif not growth:
@@ -73,8 +73,8 @@ for path in pathlist:
      elif 'parameters' in path_in_str:
          pass
      
-#with open('growth_robustness.pkl', 'wb') as f:
-#    pickle.dump(growth_robustness, f)
+with open('growth_robustness3.pkl', 'wb') as f:
+    pickle.dump(growth_robustness, f)
     
-with open('nongrowth_robustness2.pkl', 'wb') as f:
-    pickle.dump(nongrowth_robustness, f)
+#with open('nongrowth_robustness2.pkl', 'wb') as f:
+#    pickle.dump(nongrowth_robustness, f)
